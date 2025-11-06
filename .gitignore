@@ -1,0 +1,14 @@
+# LÖVE2D build files
+*.love
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Lua compiled files
+*.luac
+
