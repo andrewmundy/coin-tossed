@@ -2,27 +2,11 @@
 
 A pixel-art coin flipping roguelike built with LÖVE2D!
 
-## Phase 1 MVP - ✅ COMPLETE!
-
-The basic game is playable with:
-- ✅ Coin flipping with 48.5% heads, 48.5% tails, 1% edge
-- ✅ Money tracking ($10 per heads, $1000 per edge)
-- ✅ Consecutive tails counter with warnings
-- ✅ Loss condition: 3 consecutive tails
-- ✅ Animated coin with flip effects
-- ✅ Game over screen with stats
-- ✅ Restart functionality
-
 ## How to Run
 
 Make sure you have LÖVE2D installed, then:
 
-```bash
-cd /Users/andrewmundy/Development/Flipper
-love .
-```
-
-Or just drag the `Flipper` folder onto the LÖVE application.
+just drag the `Flipper` folder onto the LÖVE application.
 
 ## Controls
 
