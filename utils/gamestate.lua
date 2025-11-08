@@ -4,7 +4,7 @@ local Gamestate = {}
 Gamestate.current = nil
 Gamestate.states = {}
 
-function Gamestate.switch(state)
+function Gamestate.switch(state, ...)
     if Gamestate.current and Gamestate.current.exit then
         Gamestate.current:exit()
     end
@@ -12,7 +12,7 @@ function Gamestate.switch(state)
     Gamestate.current = state
     
     if Gamestate.current.enter then
-        Gamestate.current:enter()
+        Gamestate.current:enter(...)
     end
 end
 
@@ -41,6 +41,12 @@ end
 function Gamestate.keypressed(key)
     if Gamestate.current and Gamestate.current.keypressed then
         Gamestate.current:keypressed(key)
+    end
+end
+
+function Gamestate.mousemoved(x, y, dx, dy)
+    if Gamestate.current and Gamestate.current.mousemoved then
+        Gamestate.current:mousemoved(x, y, dx, dy)
     end
 end
 
