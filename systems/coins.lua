@@ -7,34 +7,39 @@ CoinUpgrades.TIERS = {
         id = "bronze",
         name = "Bronze Coin",
         base_value = 1,
+        max_card_slots = 2,
         color = {0.8, 0.5, 0.3},
         cost = 0 -- Starting tier
     },
     {
         id = "silver",
         name = "Silver Coin",
-        base_value = 3,
+        base_value = 2,
+        max_card_slots = 3,
         color = {0.75, 0.75, 0.8},
         cost = 50
     },
     {
         id = "gold",
         name = "Gold Coin",
-        base_value = 8,
+        base_value = 4,
+        max_card_slots = 4,
         color = {1, 0.84, 0},
         cost = 300
     },
     {
         id = "platinum",
         name = "Platinum Coin",
-        base_value = 20,
+        base_value = 8,
+        max_card_slots = 5,
         color = {0.7, 0.9, 1},
         cost = 1500
     },
     {
         id = "diamond",
         name = "Diamond Coin",
-        base_value = 50,
+        base_value = 16,
+        max_card_slots = 6,
         color = {0.5, 1, 1},
         cost = 5000
     }

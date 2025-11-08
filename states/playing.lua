@@ -504,7 +504,7 @@ function Playing:processFlipResult(result)
         -- Trigger streak multiplier bump animation (only streak changes on edge)
         self.streak_mult_bump = 1.0
         
-        local earned = self.base_value * 20 * zone_multiplier * effects.universal_multiplier * self.streak_multiplier
+        local earned = self.base_value * 10 * zone_multiplier * effects.universal_multiplier * self.streak_multiplier
         -- Don't floor - keep cents!
         self.money = self.money + earned
         self.last_earned = earned

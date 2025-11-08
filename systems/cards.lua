@@ -21,7 +21,7 @@ Cards.CATALOG = {
         effect = function(level, game_state)
             return {
                 type = "heads_value",
-                multiplier = 1 + (level * 0.3) -- +30% per level
+                multiplier = 1 + (level * 0.10) -- +10% per level
             }
         end
     },
@@ -43,7 +43,7 @@ Cards.CATALOG = {
             end
             return {
                 type = "heads_value",
-                multiplier = 1 + (consecutive * 0.1 * level) -- +10% per consecutive head per level
+                multiplier = 1 + (consecutive * 0.05 * level) -- +5% per consecutive head per level
             }
         end
     },
@@ -56,7 +56,7 @@ Cards.CATALOG = {
         effect = function(level, game_state)
             return {
                 type = "tails_value",
-                value = level * 0.2 -- $0.20 per level
+                value = level * 0.10 -- $0.10 per level
             }
         end
     },
@@ -69,7 +69,7 @@ Cards.CATALOG = {
         effect = function(level, game_state)
             return {
                 type = "universal_multiplier",
-                multiplier = 1 + (level * 0.2) -- +20% per level
+                multiplier = 1 + (level * 0.08) -- +8% per level
             }
         end
     },
@@ -84,7 +84,7 @@ Cards.CATALOG = {
         effect = function(level, game_state)
             return {
                 type = "heads_zone_size",
-                multiplier = 1 + (level * 0.15) -- +15% larger heads zones per level
+                multiplier = 1 + (level * 0.08) -- +8% larger heads zones per level
             }
         end
     },
@@ -110,7 +110,7 @@ Cards.CATALOG = {
         effect = function(level, game_state)
             return {
                 type = "edge_zone_size",
-                multiplier = 1 + (level * 0.2) -- +20% larger edge zones per level
+                multiplier = 1 + (level * 0.10) -- +10% larger edge zones per level
             }
         end
     },
@@ -153,7 +153,7 @@ Cards.CATALOG = {
         effect = function(level, game_state)
             return {
                 type = "meter_speed",
-                multiplier = 1 - (level * 0.1) -- -10% speed per level
+                multiplier = 1 - (level * 0.05) -- -5% speed per level
             }
         end
     },
@@ -167,6 +167,21 @@ Cards.CATALOG = {
             return {
                 type = "edge_multiplier",
                 increase = level * 0.2 -- +0.2x per level
+            }
+        end
+    },
+    
+    -- Economic Cards
+    {
+        id = "haggler",
+        name = "Haggler",
+        description = "Shop cards cost less",
+        rarity = Cards.RARITY.COMMON,
+        max_level = 3,
+        effect = function(level, game_state)
+            return {
+                type = "shop_discount",
+                discount = level * 0.10 -- 10%/20%/30% discount per level
             }
         end
     }
@@ -275,7 +290,8 @@ function Cards.applyEffects(owned_cards, game_state)
         edge_multiplier_bonus = 0,
         heads_zone_size_multiplier = 1.0,
         edge_zone_size_multiplier = 1.0,
-        extra_heads_zones = 0
+        extra_heads_zones = 0,
+        shop_discount = 0
     }
     
     -- Apply each owned card's effect
@@ -304,6 +320,8 @@ function Cards.applyEffects(owned_cards, game_state)
                 effects.edge_zone_size_multiplier = effects.edge_zone_size_multiplier * effect.multiplier
             elseif effect.type == "extra_heads_zones" then
                 effects.extra_heads_zones = effects.extra_heads_zones + effect.count
+            elseif effect.type == "shop_discount" then
+                effects.shop_discount = effects.shop_discount + effect.discount
             end
         end
     end

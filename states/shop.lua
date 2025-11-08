@@ -63,30 +63,43 @@ function Shop:draw()
     love.graphics.setFont(Fonts.title)
     love.graphics.printf("UPGRADE SHOP", 0, 15, w, "center")
     
-    -- "YOUR CARDS" section in header right side (always show 5 slots)
-    local owned_x = w - 380
+    -- "YOUR CARDS" section - wrapped layout (dynamic based on coin tier)
+    local current_tier = CoinUpgrades.getTier(self.game_data.coin_tier)
+    local max_card_slots = current_tier.max_card_slots
+    local owned_card_width = 230
+    local owned_card_height = 70
+    local owned_spacing = 10
     local owned_y = 70
-    local owned_width = 360
-    local owned_card_height = 40
-    local max_card_slots = 5
+    
+    -- Calculate wrapping layout (3 per row max)
+    local cards_per_row = 3
     
     -- Title
     love.graphics.setColor(DOS.BRIGHT_CYAN)
     love.graphics.setFont(Fonts.large)
-    love.graphics.printf("YOUR CARDS (" .. #self.game_data.owned_cards .. "/5)", owned_x, owned_y, owned_width, "left")
+    love.graphics.printf("YOUR CARDS (" .. #self.game_data.owned_cards .. "/" .. max_card_slots .. ")", 20, owned_y, w - 40, "left")
     
-    owned_y = owned_y + 30
+    owned_y = owned_y + 35
     
     -- Track mouse position for hover
     local mx, my = love.mouse.getPosition()
     
-    -- Draw all 5 card slots (filled or empty)
+    -- Draw all card slots in wrapped layout
     for i = 1, max_card_slots do
-        local owned_card_y = owned_y + (i - 1) * (owned_card_height + 8)
+        local row = math.floor((i - 1) / cards_per_row)
+        local col = (i - 1) % cards_per_row
+        local cards_in_this_row = math.min(cards_per_row, max_card_slots - row * cards_per_row)
+        
+        -- Calculate total width for centering this row
+        local row_width = cards_in_this_row * owned_card_width + (cards_in_this_row - 1) * owned_spacing
+        local row_start_x = (w - row_width) / 2
+        
+        local owned_card_x = row_start_x + col * (owned_card_width + owned_spacing)
+        local owned_card_y = owned_y + row * (owned_card_height + owned_spacing)
         local owned = self.game_data.owned_cards[i]
         
         -- Check if hovering over this slot
-        local is_hovering = mx >= owned_x and mx <= owned_x + owned_width and
+        local is_hovering = mx >= owned_card_x and mx <= owned_card_x + owned_card_width and
                             my >= owned_card_y and my <= owned_card_y + owned_card_height
         
         if owned then
@@ -108,18 +121,18 @@ function Shop:draw()
                 end
                 
                 -- Draw card box with level decorations
-                drawBox(owned_x, owned_card_y, owned_width, owned_card_height, bg_color, bg_color)
+                drawBox(owned_card_x, owned_card_y, owned_card_width, owned_card_height, bg_color, bg_color)
                 
                 -- Level 2 and 3 get special border decorations
                 if owned.level >= 2 then
                     love.graphics.setColor(DOS.YELLOW)
                     love.graphics.setLineWidth(2)
-                    love.graphics.rectangle("line", owned_x + 2, owned_card_y + 2, owned_width - 4, owned_card_height - 4)
+                    love.graphics.rectangle("line", owned_card_x + 2, owned_card_y + 2, owned_card_width - 4, owned_card_height - 4)
                 end
                 if owned.level >= 3 then
                     love.graphics.setColor(DOS.BRIGHT_CYAN)
                     love.graphics.setLineWidth(1)
-                    love.graphics.rectangle("line", owned_x + 5, owned_card_y + 5, owned_width - 10, owned_card_height - 10)
+                    love.graphics.rectangle("line", owned_card_x + 5, owned_card_y + 5, owned_card_width - 10, owned_card_height - 10)
                 end
                 
                 -- Card name with level stars and level number
@@ -128,29 +141,32 @@ function Shop:draw()
                 love.graphics.setFont(Fonts.small)
                 
                 if is_hovering then
-                    -- Show sell price on hover
+                    -- Show sell price on hover (compact for horizontal layout)
                     local sell_price = math.floor(Cards.getCardCost(card_def, owned.level) * 0.5)
-                    love.graphics.printf(level_stars .. " " .. card_def.name .. " Lv." .. owned.level, owned_x + 8, owned_card_y + 4, owned_width - 16, "left")
+                    love.graphics.printf(level_stars .. " " .. card_def.name, owned_card_x + 5, owned_card_y + 5, owned_card_width - 10, "center")
+                    love.graphics.printf("Lv." .. owned.level, owned_card_x + 5, owned_card_y + 22, owned_card_width - 10, "center")
                     love.graphics.setColor(DOS.RED)
                     love.graphics.setFont(Fonts.tiny)
-                    love.graphics.printf("RIGHT-CLICK TO SELL: $" .. sell_price, owned_x + 8, owned_card_y + 24, owned_width - 16, "left")
+                    love.graphics.printf("R-CLICK: $" .. sell_price, owned_card_x + 5, owned_card_y + 40, owned_card_width - 10, "center")
                 else
-                    love.graphics.printf(level_stars .. " " .. card_def.name .. " Lv." .. owned.level, owned_x + 8, owned_card_y + 8, owned_width - 16, "left")
+                    -- Normal display - compact layout
+                    love.graphics.printf(level_stars .. " " .. card_def.name, owned_card_x + 5, owned_card_y + 8, owned_card_width - 10, "center")
+                    love.graphics.printf("Lv." .. owned.level, owned_card_x + 5, owned_card_y + 25, owned_card_width - 10, "center")
                     
-                    -- Effect preview
+                    -- Effect preview (compact)
                     local effect = card_def.effect(owned.level, self.game_data)
                     local effect_text = self:formatEffect(effect, owned.level)
                     love.graphics.setColor(DOS.BLACK)
                     love.graphics.setFont(Fonts.tiny)
-                    love.graphics.printf(effect_text, owned_x + 8, owned_card_y + 22, owned_width - 16, "left")
+                    love.graphics.printf(effect_text, owned_card_x + 5, owned_card_y + 45, owned_card_width - 10, "center")
                 end
             end
         else
             -- Empty slot - draw placeholder
-            drawBox(owned_x, owned_card_y, owned_width, owned_card_height, DOS.DARK_GRAY, DOS.DARK_GRAY)
+            drawBox(owned_card_x, owned_card_y, owned_card_width, owned_card_height, DOS.DARK_GRAY, DOS.DARK_GRAY)
             love.graphics.setColor(DOS.LIGHT_GRAY)
             love.graphics.setFont(Fonts.small)
-            love.graphics.printf("[ EMPTY SLOT ]", owned_x + 8, owned_card_y + 12, owned_width - 16, "center")
+            love.graphics.printf("[ EMPTY SLOT ]", owned_card_x + 5, owned_card_y + 25, owned_card_width - 10, "center")
         end
     end
     
@@ -169,8 +185,11 @@ function Shop:draw()
             local card_x = start_x + (i - 1) * (card_width + card_spacing)
             local card_y = start_y
             
-            -- Calculate card cost based on target level
-            local cost = Cards.getCardCost(shop_card.card, shop_card.target_level)
+            -- Calculate card cost based on target level (with discount from Haggler card)
+            local base_cost = Cards.getCardCost(shop_card.card, shop_card.target_level)
+            local card_effects = Cards.applyEffects(self.game_data.owned_cards, self.game_data)
+            local discount = card_effects.shop_discount
+            local cost = math.floor(base_cost * (1 - discount))
             local can_afford = self.game_data.money >= cost
             local is_upgrade = shop_card.target_level > 1
         
@@ -314,7 +333,14 @@ function Shop:draw()
         -- Draw coin details
         love.graphics.setColor(can_afford_coin and DOS.YELLOW or DOS.LIGHT_GRAY)
         love.graphics.setFont(Fonts.medium)
-        love.graphics.printf(next_tier.name, coin_slot_x + 5, coin_center_y - 15, card_width - 10, "center")
+        love.graphics.printf(next_tier.name, coin_slot_x + 5, coin_center_y - 20, card_width - 10, "center")
+        
+        -- Show slot unlock info
+        if next_tier.max_card_slots > current_tier.max_card_slots then
+            love.graphics.setColor(can_afford_coin and DOS.BRIGHT_GREEN or DOS.LIGHT_GRAY)
+            love.graphics.setFont(Fonts.tiny)
+            love.graphics.printf("+" .. (next_tier.max_card_slots - current_tier.max_card_slots) .. " Card Slot!", coin_slot_x + 5, coin_center_y + 5, card_width - 10, "center")
+        end
         
         -- Cost at the bottom
         love.graphics.setColor(can_afford_coin and DOS.BLACK or DOS.BRIGHT_RED)
@@ -375,6 +401,8 @@ function Shop:formatEffect(effect, level)
         return string.format("+%d%% Larger Edge", math.floor((effect.multiplier - 1) * 100))
     elseif effect.type == "extra_heads_zones" then
         return string.format("+%d Extra Heads Zone%s", effect.count, effect.count > 1 and "s" or "")
+    elseif effect.type == "shop_discount" then
+        return string.format("-%d%% Shop Costs", math.floor(effect.discount * 100))
     end
     return "Effect"
 end
@@ -410,18 +438,29 @@ end
 function Shop:mousepressed(x, y, button)
     local w, h = love.graphics.getDimensions()
     
-    -- Check right-click on owned cards to sell
+    -- Check right-click on owned cards to sell (dynamic wrapped layout based on coin tier)
     if button == 2 then
-        local owned_x = w - 380
-        local owned_y = 100  -- 70 + 30 (title offset)
-        local owned_width = 360
-        local owned_card_height = 40
+        local current_tier = CoinUpgrades.getTier(self.game_data.coin_tier)
+        local max_card_slots = current_tier.max_card_slots
+        local owned_card_width = 230
+        local owned_card_height = 70
+        local owned_spacing = 10
+        local owned_y = 105  -- 70 + 35 (title offset)
+        local cards_per_row = 3
         
-        for i = 1, 5 do
-            local owned_card_y = owned_y + (i - 1) * (owned_card_height + 8)
+        for i = 1, max_card_slots do
+            local row = math.floor((i - 1) / cards_per_row)
+            local col = (i - 1) % cards_per_row
+            local cards_in_this_row = math.min(cards_per_row, max_card_slots - row * cards_per_row)
+            
+            -- Calculate position for this card
+            local row_width = cards_in_this_row * owned_card_width + (cards_in_this_row - 1) * owned_spacing
+            local row_start_x = (w - row_width) / 2
+            local owned_card_x = row_start_x + col * (owned_card_width + owned_spacing)
+            local owned_card_y = owned_y + row * (owned_card_height + owned_spacing)
             local owned = self.game_data.owned_cards[i]
             
-            if owned and x >= owned_x and x <= owned_x + owned_width and
+            if owned and x >= owned_card_x and x <= owned_card_x + owned_card_width and
                y >= owned_card_y and y <= owned_card_y + owned_card_height then
                 self:sellCard(i)
                 return
@@ -487,8 +526,11 @@ function Shop:keypressed(key)
 end
 
 function Shop:selectCard(shop_card)
-    -- Check if player can afford the card
-    local cost = Cards.getCardCost(shop_card.card, shop_card.target_level)
+    -- Check if player can afford the card (with discount from Haggler card)
+    local base_cost = Cards.getCardCost(shop_card.card, shop_card.target_level)
+    local card_effects = Cards.applyEffects(self.game_data.owned_cards, self.game_data)
+    local discount = card_effects.shop_discount
+    local cost = math.floor(base_cost * (1 - discount))
     if self.game_data.money < cost then
         return -- Can't afford, do nothing
     end
@@ -507,14 +549,17 @@ function Shop:selectCard(shop_card)
     end
     
     if not found then
-        -- Check if player has room (max 5 cards)
-        if #self.game_data.owned_cards < 5 then
+        -- Check if player has room (based on coin tier)
+        local current_tier = CoinUpgrades.getTier(self.game_data.coin_tier)
+        local max_slots = current_tier.max_card_slots
+        
+        if #self.game_data.owned_cards < max_slots then
             table.insert(self.game_data.owned_cards, {
                 id = shop_card.card.id,
                 level = 1
             })
         else
-            -- Refund if no room (shouldn't happen but just in case)
+            -- Refund if no room
             self.game_data.money = self.game_data.money + cost
             return
         end
