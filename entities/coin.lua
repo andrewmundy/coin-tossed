@@ -2,7 +2,7 @@
 local Coin = {}
 Coin.__index = Coin
 
-function Coin.new(x, y, radius)
+function Coin.new(x, y, radius, value)
     local self = setmetatable({}, Coin)
     self.x = x
     self.y = y
@@ -15,6 +15,7 @@ function Coin.new(x, y, radius)
     self.result = nil
     self.zone = nil
     self.flip_speed = 3  -- Rotations during the flip (was 8, now 3 = ~1.5 full rotations)
+    self.value = value or 1  -- Coin value to display
     return self
 end
 
@@ -80,13 +81,14 @@ function Coin:draw()
     love.graphics.circle("line", 0, 0, self.radius)
     
     -- Draw face details when not edge-on
-    if scale_y > 0.3 and not self.is_flipping then
+    if scale_y > 0.3 then
         if showing_heads then
-            -- Heads: Cross pattern
+            -- Heads: Display value
             love.graphics.setColor(0.9, 0.7, 0)
-            love.graphics.setLineWidth(3)
-            love.graphics.line(-self.radius * 0.3, 0, self.radius * 0.3, 0)
-            love.graphics.line(0, -self.radius * 0.3, 0, self.radius * 0.3)
+            local font_size = math.floor(self.radius * 0.6)
+            local coin_font = love.graphics.newFont("assets/fonts/MorePerfectDOSVGA.ttf", font_size)
+            love.graphics.setFont(coin_font)
+            love.graphics.printf("$" .. self.value, -self.radius, -font_size / 2 / scale_y, self.radius * 2, "center")
         else
             -- Tails: Circle pattern
             love.graphics.setColor(0.6, 0.6, 0.65)
@@ -96,13 +98,6 @@ function Coin:draw()
     end
     
     love.graphics.pop()
-    
-    -- Draw "Click to Flip" text
-    if not self.is_flipping then
-        love.graphics.setColor(1, 1, 1, 0.8)
-        love.graphics.printf("Click to Flip!", 
-            self.x - 100, self.y + self.radius + 20, 200, "center")
-    end
     
     love.graphics.setColor(1, 1, 1)
 end

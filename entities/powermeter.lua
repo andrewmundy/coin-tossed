@@ -17,12 +17,13 @@ function PowerMeter.new(x, y, width, height)
     self.direction = 1     -- 1 = forward, -1 = returning
     self.return_speed_multiplier = 5.0  -- Return speed is 5x faster
     self.active = true
+    self.last_speed_was_fast = false  -- Track speed alternation
     
-    -- Color constants (matching Balatro style)
-    local HEADS_COLOR = {0.4, 0.6, 1.0}    -- Bright blue
-    local TAILS_COLOR = {0.95, 0.4, 0.35}  -- Red-orange (not used for zones, bar is all red)
-    local EDGE_COLOR = {1, 0.84, 0}        -- Gold for edge zones
-    local BAR_COLOR = {0.95, 0.4, 0.35}    -- Red base bar color
+    -- DOS Color constants
+    local HEADS_COLOR = DOS.BRIGHT_BLUE
+    local TAILS_COLOR = DOS.RED
+    local EDGE_COLOR = DOS.YELLOW
+    local BAR_COLOR = DOS.RED
 
     -- Size constants (in percentage points, 0-100)
     local XXS = 1.5
@@ -52,36 +53,12 @@ function PowerMeter.new(x, y, width, height)
     -- Store bar color for drawing
     self.bar_color = BAR_COLOR
     
-    -- Define only heads and edge zones - tails will fill the gaps automatically
-    local special_zones = {
-        -- zone("heads", 0.2,  MD,  1.0),
-        zone("heads", 0.3,   XXL,  1.0),
-        zone("edge",  0.65, XXS, 1.5),
-        -- zone("heads", 0.65,  MD,  1.2),
-        -- zone("heads", 0.8,  MD,  1.0)
-    }
+    -- Store zone helper function for rebuilding
+    self.zone_helper = zone
+    self.zone_sizes = {XXS = XXS, XS = XS, SM = SM, MD = MD, LG = LG, XL = XL, XXL = XXL, XXXL = XXXL}
     
-    -- Auto-generate full zone list with tails filling gaps
-    self.zones = {}
-    table.sort(special_zones, function(a, b) return a.start < b.start end)
-    
-    local current_pos = 0.0
-    for _, special_zone in ipairs(special_zones) do
-        -- Fill gap with tails if there is one
-        if current_pos < special_zone.start then
-            local gap_size = (special_zone.start - current_pos) * 100  -- Convert to percentage points
-            table.insert(self.zones, zone("tails", current_pos, gap_size, 1.0))
-        end
-        -- Add the special zone
-        table.insert(self.zones, special_zone)
-        current_pos = special_zone.stop
-    end
-    
-    -- Fill remaining space with tails
-    if current_pos < 1.0 then
-        local remaining_size = (1.0 - current_pos) * 100  -- Convert to percentage points
-        table.insert(self.zones, zone("tails", current_pos, remaining_size, 1.0))
-    end
+    -- Build initial zones (will be rebuilt with card effects later)
+    self:rebuildZones()
     
     -- Randomize initial speed
     self:randomizeSpeed()
@@ -96,6 +73,7 @@ function PowerMeter.new(x, y, width, height)
     self.bump_duration = 0.3
     self.bump_offset = 0
     self.heads_lift_offset = 0
+    self.edge_lift_offset = 0
     
     return self
 end
@@ -163,37 +141,105 @@ function PowerMeter:update(dt)
             local settle_progress = (progress - 0.4) / 0.6
             self.heads_lift_offset = -4 * (1 - settle_progress)
         end
+        
+        -- Edge lift: more pronounced, different timing (bouncy!)
+        if progress < 0.15 then
+            -- Initial delay
+            self.edge_lift_offset = 0
+        elseif progress < 0.35 then
+            -- Quick lift up (faster than heads)
+            local lift_progress = (progress - 0.15) / 0.2
+            self.edge_lift_offset = -lift_progress * 8
+        elseif progress < 0.55 then
+            -- Bounce down a bit
+            local bounce_progress = (progress - 0.35) / 0.2
+            self.edge_lift_offset = -8 + bounce_progress * 4
+        else
+            -- Settle back to position
+            local settle_progress = (progress - 0.55) / 0.45
+            self.edge_lift_offset = -4 * (1 - settle_progress)
+        end
     else
         self.bump_offset = 0
         self.heads_lift_offset = 0
+        self.edge_lift_offset = 0
     end
 end
 
 function PowerMeter:randomizeSpeed()
-    -- Randomize speed by ±25% to prevent muscle memory
-    local variance = 0.25
-    local random_factor = 1 + (love.math.random() * 2 - 1) * variance
-    self.speed = self.base_speed * random_factor
+    -- Alternate between fast (>1.0x) and slow (<1.0x) speeds
+    -- Tighter variance: 0.8x to 1.2x total range
+    
+    if self.last_speed_was_fast then
+        -- Generate a slow speed (0.8x to 0.95x)
+        local random_factor = 0.8 + (love.math.random() * 0.15)
+        self.speed = self.base_speed * random_factor
+        self.last_speed_was_fast = false
+    else
+        -- Generate a fast speed (1.05x to 1.2x)
+        local random_factor = 1.05 + (love.math.random() * 0.15)
+        self.speed = self.base_speed * random_factor
+        self.last_speed_was_fast = true
+    end
+end
+
+function PowerMeter:rebuildZones(effects)
+    effects = effects or {
+        heads_zone_size_multiplier = 1.0,
+        edge_zone_size_multiplier = 1.0,
+        extra_heads_zones = 0
+    }
+    
+    local zone = self.zone_helper
+    local XXS, XS, SM, MD, LG, XL, XXL, XXXL = self.zone_sizes.XXS, self.zone_sizes.XS, self.zone_sizes.SM, self.zone_sizes.MD, self.zone_sizes.LG, self.zone_sizes.XL, self.zone_sizes.XXL, self.zone_sizes.XXXL
+    
+    -- Base zones (LG = 18, which was the original size)
+    local special_zones = {
+        zone("heads", 0.3, XL * effects.heads_zone_size_multiplier, 1.0),
+        zone("edge", 0.58, XXS * effects.edge_zone_size_multiplier, 1.5),
+    }
+    
+    -- Add extra heads zones based on card effects
+    local extra_positions = {0.15, 0.50, 0.78} -- Positions for extra zones
+    for i = 1, math.min(effects.extra_heads_zones, 3) do
+        table.insert(special_zones, zone("heads", extra_positions[i], XS * effects.heads_zone_size_multiplier, 1.0))
+    end
+    
+    -- Auto-generate full zone list with tails filling gaps
+    self.zones = {}
+    table.sort(special_zones, function(a, b) return a.start < b.start end)
+    
+    local current_pos = 0.0
+    for _, special_zone in ipairs(special_zones) do
+        -- Fill gap with tails if there is one
+        if current_pos < special_zone.start then
+            local gap_size = (special_zone.start - current_pos) * 100  -- Convert to percentage points
+            table.insert(self.zones, zone("tails", current_pos, gap_size, 1.0))
+        end
+        -- Add the special zone
+        table.insert(self.zones, special_zone)
+        current_pos = special_zone.stop
+    end
+    
+    -- Fill remaining space with tails
+    if current_pos < 1.0 then
+        local remaining_size = (1.0 - current_pos) * 100  -- Convert to percentage points
+        table.insert(self.zones, zone("tails", current_pos, remaining_size, 1.0))
+    end
 end
 
 function PowerMeter:draw()
     -- Apply bump offset to bar position
     local bar_y = self.y + self.bump_offset
     
-    -- Draw chunky layered shadow (moves with bar)
-    love.graphics.setColor(0, 0, 0, 0.3)
-    love.graphics.rectangle("fill", self.x + 8, bar_y + 8, self.width, self.height, 6, 6)
-    love.graphics.setColor(0, 0, 0, 0.5)
-    love.graphics.rectangle("fill", self.x + 4, bar_y + 4, self.width, self.height, 6, 6)
-    
-    -- Draw red base bar (entire bar is red, moves down on bump)
+    -- Draw red base bar (entire bar is red, moves down on bump) - NO ROUNDED CORNERS
     love.graphics.setColor(self.bar_color)
-    love.graphics.rectangle("fill", self.x, bar_y, self.width, self.height, 6, 6)
+    love.graphics.rectangle("fill", self.x, bar_y, self.width, self.height)
     
-    -- Draw red meter outline (chunky and bold)
-    love.graphics.setColor(self.bar_color[1] * 0.7, self.bar_color[2] * 0.7, self.bar_color[3] * 0.7)
-    love.graphics.setLineWidth(5)
-    love.graphics.rectangle("line", self.x, bar_y, self.width, self.height, 6, 6)
+    -- Draw red meter outline (matches bar color)
+    love.graphics.setColor(self.bar_color)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", self.x, bar_y, self.width, self.height)
     
     -- Draw moving indicator as a growing bar (BEHIND the blocks)
     if self.active then
@@ -201,7 +247,7 @@ function PowerMeter:draw()
         
         -- Draw the filling bar (more transparent, runs behind blocks, moves with bar)
         love.graphics.setColor(1, 1, 1, 0.15)
-        love.graphics.rectangle("fill", self.x, bar_y, bar_width, self.height, 6, 6)
+        love.graphics.rectangle("fill", self.x, bar_y, bar_width, self.height)
         
         -- Draw the edge of the bar - brighter and taller for visibility
         if bar_width > 2 then
@@ -228,27 +274,23 @@ function PowerMeter:draw()
             local zone_width = (zone.stop - zone.start) * self.width
             local block_height = self.height - 3
             
-            -- Heads blocks lift up slightly, bar bumps down
-            local block_y = self.y + self.heads_lift_offset
+            -- Use different lift offsets for heads vs edge zones
+            local block_y = self.y + (zone.result == "edge" and self.edge_lift_offset or self.heads_lift_offset)
             
             -- Draw glow effect for edge zones (special!)
             if zone.result == "edge" then
                 -- Multiple layers of glow (moves with block)
                 love.graphics.setColor(zone.color[1], zone.color[2], zone.color[3], 0.15)
-                love.graphics.rectangle("fill", zone_x - 8, block_y - 8, zone_width + 16, block_height + 16, 6, 6)
+                love.graphics.rectangle("fill", zone_x - 8, block_y - 8, zone_width + 16, block_height + 16)
                 love.graphics.setColor(zone.color[1], zone.color[2], zone.color[3], 0.25)
-                love.graphics.rectangle("fill", zone_x - 4, block_y - 4, zone_width + 8, block_height + 8, 5, 5)
+                love.graphics.rectangle("fill", zone_x - 4, block_y - 4, zone_width + 8, block_height + 8)
                 love.graphics.setColor(zone.color[1], zone.color[2], zone.color[3], 0.35)
-                love.graphics.rectangle("fill", zone_x - 2, block_y - 2, zone_width + 4, block_height + 4, 4, 4)
+                love.graphics.rectangle("fill", zone_x - 2, block_y - 2, zone_width + 4, block_height + 4)
             end
             
-            -- Draw drop shadow (underneath the block)
-            love.graphics.setColor(0, 0, 0, 0.5)
-            love.graphics.rectangle("fill", zone_x + 3, block_y + 3, zone_width, block_height, 3, 3)
-            
-            -- Draw the main block
+            -- Draw the main block (no shadows for DOS style)
             love.graphics.setColor(zone.color)
-            love.graphics.rectangle("fill", zone_x, block_y, zone_width, block_height, 3, 3)
+            love.graphics.rectangle("fill", zone_x, block_y, zone_width, block_height)
             
             -- Draw inner shadow (top and left edges for depth)
             love.graphics.setColor(0, 0, 0, 0.25)

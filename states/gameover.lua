@@ -60,33 +60,33 @@ function GameOver:draw()
     -- Game Over title box
     drawBox(w/2 - 250, 60, 500, 70, {0.25, 0.1, 0.1}, {1, 0.2, 0.2})
     love.graphics.setColor(1, 0.3, 0.3)
-    love.graphics.setFont(love.graphics.newFont(42))
+    love.graphics.setFont(Fonts.title)
     love.graphics.printf("GAME OVER", w/2 - 250, 75, 500, "center")
     
     -- Subtitle box
     drawBox(w/2 - 200, 145, 400, 40, {0.15, 0.12, 0.12}, {0.6, 0.3, 0.3})
     love.graphics.setColor(1, 0.8, 0.8)
-    love.graphics.setFont(love.graphics.newFont(18))
+    love.graphics.setFont(Fonts.large)
     love.graphics.printf("3 Consecutive Tails!", w/2 - 200, 155, 400, "center")
     
     -- Final score box
     drawBox(w/2 - 220, 210, 440, 200, {0.12, 0.15, 0.12}, {0.3, 0.6, 0.3})
     
     love.graphics.setColor(0.8, 0.8, 0.8)
-    love.graphics.setFont(love.graphics.newFont(16))
+    love.graphics.setFont(Fonts.large)
     love.graphics.printf("FINAL SCORE", 0, 225, w, "center")
     
-    love.graphics.setFont(love.graphics.newFont(48))
+    love.graphics.setFont(Fonts.title)
     love.graphics.setColor(0.3, 1, 0.3)
     love.graphics.printf("$" .. self.final_money, 0, 255, w, "center")
     
     love.graphics.setColor(0.7, 0.7, 0.7)
-    love.graphics.setFont(love.graphics.newFont(14))
+    love.graphics.setFont(Fonts.medium)
     love.graphics.printf("Total Flips: " .. self.final_flips, 0, 320, w, "center")
     
     -- Breakdown with colored boxes
     local breakdown_y = 350
-    love.graphics.setFont(love.graphics.newFont(14))
+    love.graphics.setFont(Fonts.medium)
     
     love.graphics.setColor(0.1, 0.3, 0.1)
     love.graphics.rectangle("fill", w/2 - 80, breakdown_y, 160, 20, 2, 2)
@@ -108,12 +108,12 @@ function GameOver:draw()
     -- Restart button box
     drawBox(w/2 - 200, h - 110, 400, 50, {0.15, 0.2, 0.15}, {0.3, 0.8, 0.3})
     love.graphics.setColor(0.5, 1, 0.5)
-    love.graphics.setFont(love.graphics.newFont(22))
+    love.graphics.setFont(Fonts.xlarge)
     love.graphics.printf("Press SPACE to Play Again", w/2 - 200, h - 95, 400, "center")
     
     -- ESC instructions
     love.graphics.setColor(0.5, 0.5, 0.5)
-    love.graphics.setFont(love.graphics.newFont(12))
+    love.graphics.setFont(Fonts.normal)
     love.graphics.printf("ESC to quit", 0, h - 25, w, "center")
     
     love.graphics.setColor(1, 1, 1)
