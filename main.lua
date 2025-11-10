@@ -19,8 +19,11 @@ Shaders = {}
 -- Global time for shaders
 ShaderTime = 0
 
+-- Detect if running in web browser (love.js has different capabilities)
+IsWebBuild = love.system and love.system.getOS() == "Web"
+
 -- Enable/disable CRT effect (set to false to disable)
-UseCRTEffect = true  -- Enabled - using ultra-simple shader
+UseCRTEffect = true  -- Enabled, will gracefully fall back if shaders fail
 
 -- CRT scanline intensity (0.0 = none, 0.05 = subtle, 0.1 = medium, 0.2 = strong)
 CRTScanlineIntensity = 0.015  -- Adjust this value to make CRT more or less intense
@@ -112,6 +115,7 @@ function love.load()
     end)
     if not success then
         print("Background shader failed to load:", err)
+        Shaders.background = nil
     end
     
     success, err = pcall(function()
@@ -139,15 +143,27 @@ function love.load()
     end
     
     -- Create canvases (may fail in web version)
-    local w, h = love.graphics.getDimensions()
+    -- Use pixel dimensions for high DPI displays (but not on web)
+    local w, h
+    if not IsWebBuild then
+        local dpiscale = love.graphics.getDPIScale()
+        if dpiscale and dpiscale > 1 then
+            w, h = love.graphics.getPixelDimensions()
+        else
+            w, h = love.graphics.getDimensions()
+        end
+    else
+        w, h = love.graphics.getDimensions()
+    end
     success, err = pcall(function()
         Shaders.backgroundCanvas = love.graphics.newCanvas(w, h)
         Shaders.gameCanvas = love.graphics.newCanvas(w, h)
     end)
     if not success then
-        print("Canvas creation failed (this is okay for web version):", err)
+        print("Canvas creation failed (shaders will be disabled):", err)
         Shaders.backgroundCanvas = nil
         Shaders.gameCanvas = nil
+        UseCRTEffect = false  -- Disable CRT if canvases fail
     end
     
     -- Set initial shader parameters
@@ -207,14 +223,47 @@ function love.update(dt)
 end
 
 function love.draw()
+    -- Use pixel dimensions for high DPI displays (but not on web)
+    local w, h
+    if not IsWebBuild then
+        local dpiscale = love.graphics.getDPIScale()
+        if dpiscale and dpiscale > 1 then
+            w, h = love.graphics.getPixelDimensions()
+        else
+            w, h = love.graphics.getDimensions()
+        end
+    else
+        w, h = love.graphics.getDimensions()
+    end
+    
     -- Render game to canvas and apply CRT effect if enabled
     if UseCRTEffect and Shaders.gameCanvas and Shaders.crt then
+        -- Ensure canvas matches window size
+        local canvas_w, canvas_h = Shaders.gameCanvas:getDimensions()
+        if canvas_w ~= w or canvas_h ~= h then
+            -- Recreate canvas if size mismatch
+            local success, result = pcall(function()
+                return love.graphics.newCanvas(w, h)
+            end)
+            if success then
+                Shaders.gameCanvas = result
+                
+                -- Update background shader resolution after canvas recreation
+                if Shaders.background then
+                    pcall(function()
+                        Shaders.background:send("resolution", {w, h})
+                    end)
+                end
+            end
+        end
+        
+        -- Set canvas and render game
         love.graphics.setCanvas(Shaders.gameCanvas)
         love.graphics.clear()
         Gamestate.draw()
         love.graphics.setCanvas()
         
-        -- Apply CRT shader and draw to screen
+        -- Apply CRT shader and draw to screen at 1:1 scale
         love.graphics.setShader(Shaders.crt)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.draw(Shaders.gameCanvas, 0, 0)
@@ -237,7 +286,34 @@ function love.mousemoved(x, y, dx, dy)
     Gamestate.mousemoved(x, y, dx, dy)
 end
 
+-- Touch support for mobile devices
+function love.touchpressed(id, x, y, dx, dy, pressure)
+    -- Treat touch as mouse click
+    if Gamestate.mousepressed then
+        Gamestate.mousepressed(x, y, 1)
+    end
+end
+
+function love.touchmoved(id, x, y, dx, dy, pressure)
+    -- Treat touch movement as mouse movement
+    if Gamestate.mousemoved then
+        Gamestate.mousemoved(x, y, dx, dy)
+    end
+end
+
+function love.touchreleased(id, x, y, dx, dy, pressure)
+    -- Handle touch release if needed
+end
+
 function love.resize(w, h)
+    -- Use pixel dimensions for high DPI displays (but not on web)
+    if not IsWebBuild then
+        local dpiscale = love.graphics.getDPIScale()
+        if dpiscale and dpiscale > 1 then
+            w, h = love.graphics.getPixelDimensions()
+        end
+    end
+    
     -- Recreate canvases for new window size (may fail in web version)
     if Shaders.backgroundCanvas then
         local success, result = pcall(function()

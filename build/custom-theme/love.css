@@ -1,0 +1,92 @@
+* {
+    box-sizing: border-box;
+}
+
+h1 {
+    font-family: arial;
+    color: rgb( 11, 86, 117 );
+}
+
+body {
+    background-repeat: no-repeat;
+    background-color: black;
+    font-family: arial;
+    margin: 0;
+    padding: 0;
+    /* Prevent scrolling on mobile */
+    overflow: hidden;
+    /* Full height for mobile */
+    width: 100vw;
+    height: 100vh;
+    /* Prevent text selection on touch devices */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Prevent touch callouts on iOS */
+    -webkit-touch-callout: none;
+}
+
+footer {
+    font-family: arial;
+    font-size: 12px;
+    padding-left: 10px;
+    position:absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Links */
+a {
+    text-decoration: none;
+}
+a:link {
+    color: rgb( 233, 73, 154 );
+}
+a:visited {
+    color: rgb( 110, 30, 71 );
+}
+a:hover {
+    color: rgb( 252, 207, 230 );
+}
+
+/* Container for canvas */
+center {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Hide title on smaller screens */
+@media (max-width: 768px) {
+    h1 {
+        display: none;
+    }
+}
+
+/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+#canvas, #loadingCanvas {
+    padding: 0;
+    margin: 0 auto;
+    display: block;
+    border: 0px none;
+    /* Scale canvas to fit screen while maintaining aspect ratio */
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    /* Center the canvas */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#canvas {
+    visibility: hidden;
+}
+
+#loadingCanvas {
+    visibility: visible;
+}

@@ -14,9 +14,14 @@
       <div>
         <h1>Flipper - Coin Flipping Roguelike</h1>
         <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
-        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+        <canvas id="canvas" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
       </div>
     </center>
+    
+    <script type='text/javascript'>
+      // Set global flag for mobile detection that Lua can access
+      window.IS_MOBILE_DEVICE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    </script>
 
     <script type='text/javascript'>
       function goFullScreen(){
@@ -60,7 +65,7 @@
       }, false);
 
       var Module = {
-        arguments: ["./game.love"],
+        arguments: window.IS_MOBILE_DEVICE ? ["./game.love", "--mobile"] : ["./game.love"],
         INITIAL_MEMORY: 16777216,
         printErr: console.error.bind(console),
         canvas: (function() {
@@ -100,8 +105,15 @@
 
       var applicationLoad = function(e) {
         Love(Module);
+        // Force resize after LÖVE loads
+        setTimeout(function() {
+          if (typeof resizeCanvas !== 'undefined') {
+            window.dispatchEvent(new Event('resize'));
+          }
+        }, 500);
       }
     </script>
+    <script type="text/javascript" src="scale-fix.js"></script>
     <script type="text/javascript" src="game.js"></script>
     <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
     <footer>

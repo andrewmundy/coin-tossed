@@ -3,6 +3,7 @@ local Coin = require("entities.coin")
 local PowerMeter = require("entities.powermeter")
 local Cards = require("systems.cards")
 local CoinUpgrades = require("systems.coins")
+local Responsive = require("utils.responsive")
 
 local Playing = {}
 
@@ -104,10 +105,35 @@ function Playing:update(dt)
 end
 
 function Playing:draw()
-    local w, h = love.graphics.getDimensions()
+    -- Get actual rendering dimensions (canvas if active, otherwise window)
+    local w, h
+    local canvas = love.graphics.getCanvas()
+    if canvas then
+        w, h = canvas:getDimensions()
+    else
+        -- Use pixel dimensions for high DPI displays (but not on web)
+        if not IsWebBuild then
+            local dpiscale = love.graphics.getDPIScale()
+            if dpiscale and dpiscale > 1 then
+                w, h = love.graphics.getPixelDimensions()
+            else
+                w, h = love.graphics.getDimensions()
+            end
+        else
+            w, h = love.graphics.getDimensions()
+        end
+    end
+    
+    local layout = Responsive.getPlayingLayout()
+    local isMobile = Responsive.isMobile()
     
     -- Draw animated background using shader (directly, no canvas)
     if Shaders and Shaders.background then
+        -- Ensure shader has correct resolution based on current render target
+        pcall(function()
+            Shaders.background:send("resolution", {w, h})
+        end)
+        
         love.graphics.setShader(Shaders.background)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.rectangle("fill", 0, 0, w, h)
@@ -130,16 +156,24 @@ function Playing:draw()
         love.graphics.rectangle("line", x, y, width, height)
     end
     
-    -- Souls display box (labels on right side) - GREEN background with BLACK text (static)
-    drawBox(20, 20, 200, 45, DOS.GREEN, DOS.GREEN)
+    -- Souls display box - GREEN background with BLACK text (static)
+    drawBox(layout.souls.x, layout.souls.y, layout.souls.width, layout.souls.height, DOS.GREEN, DOS.GREEN)
     love.graphics.setFont(Fonts.xlarge)
     love.graphics.setColor(DOS.BLACK)
-    love.graphics.printf(math.floor(self.souls), 30, 30, 160, "left")
-    love.graphics.setColor(DOS.BLACK)
-    love.graphics.setFont(Fonts.normal)
-    love.graphics.printf("SOULS", 120, 35, 90, "left")
+    if isMobile then
+        -- Mobile: larger number, right-aligned text
+        love.graphics.printf(math.floor(self.souls), layout.souls.x + 10, layout.souls.y + 8, layout.souls.width - 100, "left")
+        love.graphics.setFont(Fonts.normal)
+        love.graphics.printf("SOULS", layout.souls.x + layout.souls.width - 90, layout.souls.y + 13, 80, "left")
+    else
+        -- Desktop: original layout
+        love.graphics.printf(math.floor(self.souls), layout.souls.x + 10, layout.souls.y + 10, 160, "left")
+        love.graphics.setColor(DOS.BLACK)
+        love.graphics.setFont(Fonts.normal)
+        love.graphics.printf("SOULS", layout.souls.x + 100, layout.souls.y + 15, 90, "left")
+    end
     
-    -- Tails counter box with warning (labels on right side) - RED background with BLACK text
+    -- Tails counter box with warning - RED background with BLACK text
     local effects = Cards.applyEffects(self.owned_cards, self)
     local tails_limit = effects.tails_limit
     
@@ -151,46 +185,55 @@ function Playing:draw()
         tails_bg = DOS.BROWN
     end
     
-    drawBox(20, 75, 200, 45, tails_bg, tails_bg)
+    drawBox(layout.tails.x, layout.tails.y, layout.tails.width, layout.tails.height, tails_bg, tails_bg)
     love.graphics.setFont(Fonts.xlarge)
     love.graphics.setColor(DOS.BLACK)
-    love.graphics.printf(self.consecutive_tails .. "/" .. tails_limit, 30, 85, 80, "left")
-    love.graphics.setColor(DOS.BLACK)
-    love.graphics.setFont(Fonts.normal)
-    love.graphics.printf("TAILS", 120, 90, 90, "left")
+    if isMobile then
+        love.graphics.printf(self.consecutive_tails .. "/" .. tails_limit, layout.tails.x + 10, layout.tails.y + 8, layout.tails.width - 100, "left")
+        love.graphics.setFont(Fonts.normal)
+        love.graphics.printf("TAILS", layout.tails.x + layout.tails.width - 90, layout.tails.y + 13, 80, "left")
+    else
+        love.graphics.printf(self.consecutive_tails .. "/" .. tails_limit, layout.tails.x + 10, layout.tails.y + 10, 80, "left")
+        love.graphics.setColor(DOS.BLACK)
+        love.graphics.setFont(Fonts.normal)
+        love.graphics.printf("TAILS", layout.tails.x + 100, layout.tails.y + 15, 90, "left")
+    end
     
-    -- Flips counter box (moved below, labels on right side) - CYAN background with BLACK text (static)
-    drawBox(20, 130, 200, 45, DOS.CYAN, DOS.CYAN)
+    -- Flips counter box - CYAN background with BLACK text (static)
+    drawBox(layout.flips.x, layout.flips.y, layout.flips.width, layout.flips.height, DOS.CYAN, DOS.CYAN)
     love.graphics.setFont(Fonts.xlarge)
     love.graphics.setColor(DOS.BLACK)
-    love.graphics.printf(self.flips, 30, 140, 80, "left")
-    love.graphics.setColor(DOS.BLACK)
-    love.graphics.setFont(Fonts.normal)
-    love.graphics.printf("FLIPS", 120, 145, 90, "left")
+    if isMobile then
+        love.graphics.printf(self.flips, layout.flips.x + 10, layout.flips.y + 8, layout.flips.width - 100, "left")
+        love.graphics.setFont(Fonts.normal)
+        love.graphics.printf("FLIPS", layout.flips.x + layout.flips.width - 90, layout.flips.y + 13, 80, "left")
+    else
+        love.graphics.printf(self.flips, layout.flips.x + 10, layout.flips.y + 10, 80, "left")
+        love.graphics.setColor(DOS.BLACK)
+        love.graphics.setFont(Fonts.normal)
+        love.graphics.printf("FLIPS", layout.flips.x + 100, layout.flips.y + 15, 90, "left")
+    end
     
     -- Multiplier boxes side by side with "x" between them
-    local mult_y = 185
-    local box_width = 92
-    local box_height = 60
+    local coin_mult_offset = self.coin_mult_bump * 3  -- Small bump down
+    local streak_mult_offset = self.streak_mult_bump * 3  -- Small bump down
+    local card_mult = effects.heads_value_multiplier * effects.universal_multiplier
     
     -- Card Multiplier box (left side) - BLUE background with BLACK text
-    local coin_mult_offset = self.coin_mult_bump * 3  -- Small bump down
-    local card_mult = effects.heads_value_multiplier * effects.universal_multiplier
-    drawBox(20, mult_y + coin_mult_offset, box_width, box_height, DOS.BRIGHT_BLUE, DOS.BRIGHT_BLUE)
+    drawBox(layout.coinMult.x, layout.coinMult.y + coin_mult_offset, layout.coinMult.width, layout.coinMult.height, DOS.BRIGHT_BLUE, DOS.BRIGHT_BLUE)
     love.graphics.setFont(Fonts.xxlarge)
     love.graphics.setColor(DOS.BLACK)
-    love.graphics.printf(string.format("%.2fx", card_mult), 20, mult_y + 10 + coin_mult_offset, box_width, "center")
+    love.graphics.printf(string.format("%.2fx", card_mult), layout.coinMult.x, layout.coinMult.y + 10 + coin_mult_offset, layout.coinMult.width, "center")
     love.graphics.setColor(DOS.BLACK)
     love.graphics.setFont(Fonts.small)
-    love.graphics.printf("COIN", 20, mult_y + 40 + coin_mult_offset, box_width, "center")
+    love.graphics.printf("COIN", layout.coinMult.x, layout.coinMult.y + 40 + coin_mult_offset, layout.coinMult.width, "center")
     
     -- "×" symbol in the middle
     love.graphics.setFont(Fonts.xxlarge)
     love.graphics.setColor(DOS.LIGHT_GRAY)
-    love.graphics.printf("×", 112, mult_y + 15, 16, "center")
+    love.graphics.printf("×", layout.multSeparator.x, layout.multSeparator.y, 16, "center")
     
     -- Streak Multiplier box (right side) - colored background with BLACK text
-    local streak_mult_offset = self.streak_mult_bump * 3  -- Small bump down
     local streak_bg = DOS.LIGHT_GRAY
     if self.consecutive_heads >= 10 then
         -- Red hot streak!
@@ -203,19 +246,19 @@ function Playing:draw()
         streak_bg = DOS.YELLOW
     end
     
-    drawBox(128, mult_y + streak_mult_offset, box_width, box_height, streak_bg, streak_bg)
+    drawBox(layout.streakMult.x, layout.streakMult.y + streak_mult_offset, layout.streakMult.width, layout.streakMult.height, streak_bg, streak_bg)
     love.graphics.setFont(Fonts.xxlarge)
     love.graphics.setColor(DOS.BLACK)
-    love.graphics.printf(string.format("%.2fx", self.streak_multiplier), 128, mult_y + 10 + streak_mult_offset, box_width, "center")
+    love.graphics.printf(string.format("%.2fx", self.streak_multiplier), layout.streakMult.x, layout.streakMult.y + 10 + streak_mult_offset, layout.streakMult.width, "center")
     love.graphics.setColor(DOS.BLACK)
     love.graphics.setFont(Fonts.small)
-    love.graphics.printf("STREAK", 128, mult_y + 40 + streak_mult_offset, box_width, "center")
+    love.graphics.printf("STREAK", layout.streakMult.x, layout.streakMult.y + 40 + streak_mult_offset, layout.streakMult.width, "center")
     
-    -- Owned cards display (right side)
-    if #self.owned_cards > 0 then
+    -- Owned cards display (right side, hidden on mobile)
+    if layout.showCards and #self.owned_cards > 0 then
         love.graphics.setColor(0.8, 0.8, 0.9)
         love.graphics.setFont(Fonts.medium)
-        love.graphics.printf("CARDS (C)", w - 160, 20, 150, "left")
+        love.graphics.printf("CARDS (C)", w - 160, layout.cardsY, 150, "left")
         
         if self.show_card_details then
             -- Detailed card view with descriptions
@@ -298,21 +341,34 @@ function Playing:draw()
         end
     end
     
-    -- Debug hints
+    -- Debug hints (smaller on mobile)
     love.graphics.setColor(DOS.DARK_GRAY)
-    love.graphics.setFont(Fonts.small)
-    love.graphics.printf("S: Shop", w - 80, h - 40, 70, "left")
-    love.graphics.printf("C: Cards", w - 80, h - 25, 70, "left")
+    love.graphics.setFont(isMobile and Fonts.tiny or Fonts.small)
+    love.graphics.printf("S: Shop", layout.hints.x, layout.hints.y, 70, "left")
+    if not isMobile then
+        love.graphics.printf("C: Cards", layout.hints.x, layout.hints.y + 15, 70, "left")
+    end
     
     if self.consecutive_tails >= tails_limit - 1 then
         love.graphics.setColor(DOS.BRIGHT_RED)
-        love.graphics.setFont(Fonts.large)
+        love.graphics.setFont(isMobile and Fonts.medium or Fonts.large)
         love.graphics.printf("WARNING: One more tails and you lose!", 
-            0, h - 100, w, "center")
+            0, layout.warning.y, w, "center")
     end
+    
+    -- Update coin position for responsive layout
+    self.coin.x = layout.coin.x
+    self.coin.y = layout.coin.y
+    self.coin.radius = layout.coin.radius
     
     -- Draw coin with owned cards for gem display
     self.coin:draw(self.owned_cards)
+    
+    -- Update power meter position for responsive layout
+    self.power_meter.x = layout.powerMeter.x
+    self.power_meter.y = layout.powerMeter.y
+    self.power_meter.width = layout.powerMeter.width
+    self.power_meter.height = layout.powerMeter.height
     
     -- Draw power meter
     self.power_meter:draw()
@@ -356,17 +412,17 @@ function Playing:draw()
         end
         
         -- Draw DOS-style result box
-        local box_y = h / 2 + 100
+        local box_y = layout.result.y + 100
         love.graphics.setColor(DOS.BLACK[1], DOS.BLACK[2], DOS.BLACK[3], alpha)
-        love.graphics.rectangle("fill", w/2 - 200, box_y, 400, 50)
+        love.graphics.rectangle("fill", layout.result.x, box_y, layout.result.width, layout.result.height - 30)
         
         love.graphics.setColor(result_border[1], result_border[2], result_border[3], alpha)
         love.graphics.setLineWidth(1)
-        love.graphics.rectangle("line", w/2 - 200, box_y, 400, 50)
+        love.graphics.rectangle("line", layout.result.x, box_y, layout.result.width, layout.result.height - 30)
         
         love.graphics.setColor(result_color[1], result_color[2], result_color[3], alpha)
-        love.graphics.setFont(Fonts.huge)
-        love.graphics.printf(result_text, w/2 - 200, box_y + 12, 400, "center")
+        love.graphics.setFont(isMobile and Fonts.large or Fonts.huge)
+        love.graphics.printf(result_text, layout.result.x, box_y + 12, layout.result.width, "center")
     end
     
     love.graphics.setColor(1, 1, 1)

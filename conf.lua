@@ -14,6 +14,7 @@ function love.conf(t)
     t.window.fullscreen = false
     t.window.vsync = 1
     t.window.msaa = 0
+    t.window.highdpi = true  -- Enable high DPI support for better mobile display
     
     t.modules.audio = true
     t.modules.data = true
@@ -30,7 +31,7 @@ function love.conf(t)
     t.modules.system = true
     t.modules.thread = false
     t.modules.timer = true
-    t.modules.touch = false
+    t.modules.touch = true  -- Enable touch for mobile support
     t.modules.video = false
     t.modules.window = true
 end

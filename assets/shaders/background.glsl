@@ -29,8 +29,9 @@ vec4 background_effect(vec2 screenSize, vec2 screen_coords) {
     }
     speed += 302.2;
     float new_pixel_angle = atan(uv.y, uv.x) + speed - SPIN_EASE * 20.0 * (1.0 * spin_amount * uv_len + (1.0 - 1.0 * spin_amount));
-    vec2 mid = (screenSize.xy / length(screenSize.xy)) / 2.0;
-    uv = (vec2((uv_len * cos(new_pixel_angle) + mid.x), (uv_len * sin(new_pixel_angle) + mid.y)) - mid);
+    
+    // Rotate around origin (already centered)
+    uv = vec2(uv_len * cos(new_pixel_angle), uv_len * sin(new_pixel_angle));
 
     uv *= 30.0;
     speed = time * move_speed;
