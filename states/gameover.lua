@@ -1,7 +1,7 @@
 -- Game Over state
 local GameOver = {}
 
-GameOver.final_money = 0
+GameOver.final_souls = 0
 GameOver.final_flips = 0
 GameOver.flip_history = {}
 
@@ -29,94 +29,89 @@ end
 function GameOver:draw()
     local w, h = love.graphics.getDimensions()
     
-    -- Background with pattern
-    love.graphics.setColor(0.08, 0.08, 0.1)
+    -- DOS black background
+    love.graphics.setColor(DOS.BLACK)
     love.graphics.rectangle("fill", 0, 0, w, h)
     
-    -- Draw subtle diagonal pattern
-    love.graphics.setColor(0.12, 0.1, 0.12, 0.3)
-    for i = -h, w, 40 do
-        love.graphics.line(i, 0, i + h, h)
-    end
-    
-    -- Helper function to draw a box with chunky shadow
+    -- Helper function for DOS-style boxes (no shadows, no rounded corners)
     local function drawBox(x, y, width, height, bg_color, border_color)
-        -- Layered shadows for depth (chunky pixel style)
-        love.graphics.setColor(0, 0, 0, 0.3)
-        love.graphics.rectangle("fill", x + 10, y + 10, width, height, 6, 6)
-        love.graphics.setColor(0, 0, 0, 0.6)
-        love.graphics.rectangle("fill", x + 6, y + 6, width, height, 6, 6)
-        
         -- Background
         love.graphics.setColor(bg_color)
-        love.graphics.rectangle("fill", x, y, width, height, 6, 6)
-        
-        -- Border (thick and chunky)
-        love.graphics.setColor(border_color or {0.3, 0.3, 0.35})
-        love.graphics.setLineWidth(4)
-        love.graphics.rectangle("line", x, y, width, height, 6, 6)
+        love.graphics.rectangle("fill", x, y, width, height)
+        -- Border
+        love.graphics.setColor(border_color or DOS.LIGHT_GRAY)
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", x, y, width, height)
     end
     
-    -- Game Over title box
-    drawBox(w/2 - 250, 60, 500, 70, {0.25, 0.1, 0.1}, {1, 0.2, 0.2})
-    love.graphics.setColor(1, 0.3, 0.3)
+    -- Top header bar
+    drawBox(0, 0, w, 60, DOS.RED, DOS.RED)
+    love.graphics.setColor(DOS.WHITE)
     love.graphics.setFont(Fonts.title)
-    love.graphics.printf("GAME OVER", w/2 - 250, 75, 500, "center")
+    love.graphics.printf("GAME OVER", 0, 15, w, "center")
     
-    -- Subtitle box
-    drawBox(w/2 - 200, 145, 400, 40, {0.15, 0.12, 0.12}, {0.6, 0.3, 0.3})
-    love.graphics.setColor(1, 0.8, 0.8)
+    -- Reason box
+    drawBox(w/2 - 200, 80, 400, 40, DOS.DARK_GRAY, DOS.RED)
+    love.graphics.setColor(DOS.BRIGHT_RED)
     love.graphics.setFont(Fonts.large)
-    love.graphics.printf("3 Consecutive Tails!", w/2 - 200, 155, 400, "center")
+    love.graphics.printf("3 Consecutive Tails!", w/2 - 200, 90, 400, "center")
     
-    -- Final score box
-    drawBox(w/2 - 220, 210, 440, 200, {0.12, 0.15, 0.12}, {0.3, 0.6, 0.3})
+    -- Final score section
+    drawBox(w/2 - 250, 140, 500, 180, DOS.BLUE, DOS.BRIGHT_CYAN)
     
-    love.graphics.setColor(0.8, 0.8, 0.8)
+    love.graphics.setColor(DOS.WHITE)
     love.graphics.setFont(Fonts.large)
-    love.graphics.printf("FINAL SCORE", 0, 225, w, "center")
+    love.graphics.printf("FINAL SCORE", w/2 - 250, 155, 500, "center")
     
     love.graphics.setFont(Fonts.title)
-    love.graphics.setColor(0.3, 1, 0.3)
-    love.graphics.printf("$" .. self.final_money, 0, 255, w, "center")
+    love.graphics.setColor(DOS.BRIGHT_GREEN)
+    love.graphics.printf(math.floor(self.final_souls), w/2 - 250, 185, 500, "center")
     
-    love.graphics.setColor(0.7, 0.7, 0.7)
+    love.graphics.setColor(DOS.BRIGHT_CYAN)
+    love.graphics.setFont(Fonts.large)
+    love.graphics.printf("SOULS", w/2 - 250, 220, 500, "center")
+    
+    love.graphics.setColor(DOS.LIGHT_GRAY)
     love.graphics.setFont(Fonts.medium)
-    love.graphics.printf("Total Flips: " .. self.final_flips, 0, 320, w, "center")
+    love.graphics.printf("Total Flips: " .. self.final_flips, w/2 - 250, 255, 500, "center")
     
-    -- Breakdown with colored boxes
-    local breakdown_y = 350
-    love.graphics.setFont(Fonts.medium)
+    -- Statistics breakdown
+    local stats_y = 340
+    local stats_width = 300
+    local stats_x = w/2 - stats_width/2
+    local row_height = 30
     
-    love.graphics.setColor(0.1, 0.3, 0.1)
-    love.graphics.rectangle("fill", w/2 - 80, breakdown_y, 160, 20, 2, 2)
-    love.graphics.setColor(0.3, 1, 0.3)
-    love.graphics.printf("Heads: " .. self.heads_count, w/2 - 70, breakdown_y + 3, 140, "left")
+    -- Heads
+    drawBox(stats_x, stats_y, stats_width, row_height, DOS.DARK_GRAY, DOS.BRIGHT_GREEN)
+    love.graphics.setColor(DOS.BRIGHT_GREEN)
+    love.graphics.setFont(Fonts.large)
+    love.graphics.printf("HEADS: " .. self.heads_count, stats_x + 10, stats_y + 5, stats_width - 20, "left")
     
-    love.graphics.setColor(0.3, 0.1, 0.1)
-    love.graphics.rectangle("fill", w/2 - 80, breakdown_y + 25, 160, 20, 2, 2)
-    love.graphics.setColor(1, 0.3, 0.3)
-    love.graphics.printf("Tails: " .. self.tails_count, w/2 - 70, breakdown_y + 28, 140, "left")
+    -- Tails
+    drawBox(stats_x, stats_y + row_height + 5, stats_width, row_height, DOS.DARK_GRAY, DOS.BRIGHT_RED)
+    love.graphics.setColor(DOS.BRIGHT_RED)
+    love.graphics.printf("TAILS: " .. self.tails_count, stats_x + 10, stats_y + row_height + 10, stats_width - 20, "left")
     
+    -- Edges (if any)
     if self.edge_count > 0 then
-        love.graphics.setColor(0.3, 0.25, 0.1)
-        love.graphics.rectangle("fill", w/2 - 80, breakdown_y + 50, 160, 20, 2, 2)
-        love.graphics.setColor(1, 0.84, 0)
-        love.graphics.printf("Edges: " .. self.edge_count, w/2 - 70, breakdown_y + 53, 140, "left")
+        drawBox(stats_x, stats_y + (row_height + 5) * 2, stats_width, row_height, DOS.DARK_GRAY, DOS.YELLOW)
+        love.graphics.setColor(DOS.YELLOW)
+        love.graphics.printf("EDGES: " .. self.edge_count, stats_x + 10, stats_y + (row_height + 5) * 2 + 5, stats_width - 20, "left")
     end
     
-    -- Restart button box
-    drawBox(w/2 - 200, h - 110, 400, 50, {0.15, 0.2, 0.15}, {0.3, 0.8, 0.3})
-    love.graphics.setColor(0.5, 1, 0.5)
+    -- Restart button
+    local button_y = h - 100
+    drawBox(w/2 - 250, button_y, 500, 50, DOS.GREEN, DOS.GREEN)
+    love.graphics.setColor(DOS.BLACK)
     love.graphics.setFont(Fonts.xlarge)
-    love.graphics.printf("Press SPACE to Play Again", w/2 - 200, h - 95, 400, "center")
+    love.graphics.printf("PRESS SPACE TO PLAY AGAIN", w/2 - 250, button_y + 12, 500, "center")
     
     -- ESC instructions
-    love.graphics.setColor(0.5, 0.5, 0.5)
+    love.graphics.setColor(DOS.DARK_GRAY)
     love.graphics.setFont(Fonts.normal)
     love.graphics.printf("ESC to quit", 0, h - 25, w, "center")
     
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(DOS.WHITE)
 end
 
 function GameOver:keypressed(key)

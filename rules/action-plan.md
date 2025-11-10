@@ -177,61 +177,89 @@ wei### 🎮 Current Progress: ~15% Complete (2/6 Phases)
 
 ---
 
-## Phase 4: Upgrade Store & Basic Cards
+## Phase 4: Upgrade Store & Basic Cards ✅ COMPLETED
 
 **Goal:** Implement the shop system with card selection and a starter set of upgrade cards.
 
-### Tasks:
+### Completed Implementation:
 
-1. **Shop Mechanics**
+1. **Shop Mechanics** ✅
 
-   - [ ] Trigger shop every 5 flips
-   - [ ] Create shop game state
-   - [ ] Pause game updates when shop is open
-   - [ ] Generate 5 random cards based on rarity weights
-   - [ ] Implement card selection (mouse click or keyboard)
-   - [ ] Add skip option
-   - [ ] Transition back to playing state
+   - [x] Trigger shop every 10 flips (resets tails counter)
+   - [x] Create shop game state with proper state management
+   - [x] Pause game updates when shop is open
+   - [x] Generate 3 random cards based on rarity weights (excluding maxed cards)
+   - [x] Implement card selection with mouse click
+   - [x] Add explicit close button (X in footer) - multiple purchases allowed
+   - [x] Transition back to playing state with persistent game data
+   - [x] **Coin upgrade system** in 4th slot (Bronze → Silver → Gold → Platinum → Diamond)
+   - [x] **Card sell system** - right-click to sell for 50% refund
 
-2. **Card System Foundation**
+2. **Card System Foundation** ✅
 
-   - [ ] Create Card module/table structure
-   - [ ] Define card properties (id, name, description, rarity, effect)
-   - [ ] Create card catalog/registry
-   - [ ] Track owned cards in game state (max 5)
-   - [ ] Create card effect application system
-   - [ ] Display owned cards in game UI
+   - [x] Create Cards module with complete structure (`systems/cards.lua`)
+   - [x] Define card properties: id, name, description, rarity, effect, max_level
+   - [x] Create card catalog with 8 different cards
+   - [x] Track owned cards in game state (max 5 slots, always visible)
+   - [x] **Card leveling system** (3 levels max, increasing effects)
+   - [x] **Dynamic cost system** (Level 1: $5-15, Level 2: $50, Level 3: $100-300)
+   - [x] Card effect application system with `Cards.applyEffects()`
+   - [x] Display owned cards in shop with 5 slots (filled + empty placeholders)
+   - [x] **Card slot management** with visual feedback
 
-3. **Starter Card Set (8-10 cards)**
+3. **Final Card Set (8 cards)** ✅
 
-   - [ ] **Golden Flip** (Common): Increase heads value
-   - [ ] **Weighted Coin** (Common): Increase heads probability
-   - [ ] **Nine Lives** (Common): Need 4 tails to lose
-   - [ ] **Momentum** (Common): Streak multiplier
-   - [ ] **Silver Lining** (Uncommon): Tails worth money
-   - [ ] **Streak Shield** (Uncommon): Protect streak from tails
-   - [ ] **Tails Insurance** (Uncommon): First tails don't count
-   - [ ] **Midas Touch** (Rare): Universal multiplier
+   - [x] **Golden Flip** (Common): +20%/+40%/+60% heads value per level
+   - [x] **Weighted Coin** (Uncommon): Increases heads zone size (1.2x/1.4x/1.6x)
+   - [x] **Nine Lives** (Legendary): Need 5 consecutive tails to lose (max level 1, no upgrades)
+   - [x] **Silver Lining** (Common): Tails worth $0.10/$0.25/$0.50
+   - [x] **Midas Touch** (Rare): +10%/+20%/+30% universal multiplier
+   - [x] **Edge Master** (Rare): Increases edge zone size (1.5x/2.0x/2.5x)
+   - [x] **Slow Motion** (Uncommon): Slows power meter (80%/65%/50% speed)
+   - [x] **Lucky Strike** (Uncommon): Adds 1/2/3 extra small heads zones
+   - [x] **Haggler** (Common): Shop cards cost 10%/20%/30% less
 
-4. **Card Effects Implementation**
+4. **Card Effects Implementation** ✅
 
-   - [ ] Create effect system for modifying flip results
-   - [ ] Implement value multipliers
-   - [ ] Implement probability modifiers
-   - [ ] Implement loss condition modifiers
-   - [ ] Apply all active card effects to flips
-   - [ ] Display active effects/multipliers in UI overlay
+   - [x] Create comprehensive effect system for all flip results
+   - [x] Implement value multipliers (heads_value, universal, edge)
+   - [x] Implement zone size modifiers (heads zones, edge zones)
+   - [x] Implement extra heads zone generation (dynamic zone rebuilding)
+   - [x] Implement loss condition modifiers (tails_limit = 5 with Nine Lives)
+   - [x] Implement power meter speed modifiers
+   - [x] Apply all active card effects to flips with proper stacking
+   - [x] Display active effects in UI:
+     - **COIN MULT** box (persistent card-based multiplier)
+     - **STREAK** box (consecutive heads multiplier, halves on tails)
+     - Both boxes bump on value changes
+   - [x] **Alternating power meter speed** (0.8x-0.95x slow, 1.05x-1.2x fast)
 
-5. **Shop UI Rendering**
-   - [ ] Draw shop screen background
-   - [ ] Render 5 card options with rarity colors
-   - [ ] Draw card text (name, description, effect)
-   - [ ] Show card rarity (border color/glow)
-   - [ ] Highlight hovered/selected card
-   - [ ] Draw current card collection at bottom
-   - [ ] Add visual polish (animations, particles)
+5. **Shop UI Rendering** ✅
+   - [x] Draw MS-DOS style shop screen with blue header and footer
+   - [x] Render 3 card options at bottom + coin upgrade in 4th slot
+   - [x] Draw card text with proper fonts (name, description, effect preview, cost)
+   - [x] Show card rarity with background colors (Gray/Blue/Magenta/Yellow)
+   - [x] **Level-based visual decorations:**
+     - Level 2: Gold border + stars
+     - Level 3: Gold + Cyan double border + more stars
+   - [x] Hover effects (cards lift up, show "Click to Buy"/"Can't Afford")
+   - [x] Draw owned cards in header with **5 slot system** (filled + empty)
+   - [x] **Right-click to sell** with hover showing sell price
+   - [x] Affordability indicators (dim cards, red cost when can't afford)
+   - [x] MS-DOS aesthetic (16-color palette, solid backgrounds, no rounded corners)
+   - [x] Money display centered in footer
+   - [x] **Coin upgrade card-style** with circular coin graphic
 
-**Deliverable:** Shop appears every 10 flips, players can choose cards, and cards affect gameplay.
+**Additional Features:**
+
+- Cards properly update cost/level after purchase in same shop session
+- Maxed cards (Level 3) disappear from shop
+- Sold cards can be repurchased from Level 1
+- Card effects dynamically rebuild power meter zones
+- Sound effects for purchases and upgrades
+- Debug keys: 'S' to open shop, 'C' to toggle card details
+
+**Deliverable:** ✅ Shop appears every 10 flips with 3 cards + coin upgrade. Players can buy multiple cards/upgrades per visit, sell unwanted cards, level up cards to 3 levels, and all cards significantly affect gameplay through stacking effects and zone modifications.
 
 ---
 
@@ -270,15 +298,7 @@ wei### 🎮 Current Progress: ~15% Complete (2/6 Phases)
    - [ ] Edge resets tails counter
    - [ ] Visual animation for edge landing
 
-4. **Pattern Recognition System**
-
-   - [ ] Track flip sequence history
-   - [ ] Detect 3-flip patterns (HHT, THH, etc.)
-   - [ ] Detect 4-flip patterns
-   - [ ] Award pattern bonuses
-   - [ ] Display pattern achievements
-
-5. **Card Combinations**
+4. **Card Combinations**
 
    - [ ] Detect compatible card pairs
    - [ ] Show combination option in shop
@@ -286,7 +306,7 @@ wei### 🎮 Current Progress: ~15% Complete (2/6 Phases)
    - [ ] Implement combined card effects
    - [ ] Visual indicator for combinable cards
 
-6. **Synergy Indicators**
+5. **Synergy Indicators**
    - [ ] Detect card synergies in shop
    - [ ] Highlight synergistic cards (glowing border)
    - [ ] Show synergy tooltips

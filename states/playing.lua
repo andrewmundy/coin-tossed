@@ -8,14 +8,14 @@ local Playing = {}
 
 function Playing:enter(previous_state, game_data)
     -- Handle parameter confusion from shop (first param might be game_data)
-    if previous_state and previous_state.money then
+    if previous_state and previous_state.souls then
         game_data = previous_state
         previous_state = nil
     end
     
     -- If returning from shop, restore game data
     if game_data then
-        self.money = game_data.money
+        self.souls = game_data.souls
         self.flips = game_data.flips
         self.consecutive_tails = 0  -- Reset tails counter when returning from shop
         self.consecutive_heads = game_data.consecutive_heads or 0
@@ -26,12 +26,12 @@ function Playing:enter(previous_state, game_data)
         self.flips_since_shop = game_data.flips_since_shop or 0
     else
         -- New game
-        self.money = 0
+        self.souls = 0
         self.flips = 0
         self.consecutive_tails = 0
         self.consecutive_heads = 0  -- Track heads streak
         self.streak_multiplier = 1.0  -- Streak bonus multiplier
-        self.coin_tier = "bronze"
+        self.coin_tier = "level_1"
         self.flip_history = {}
         self.owned_cards = {}
         self.flips_since_shop = 0
@@ -54,7 +54,7 @@ function Playing:enter(previous_state, game_data)
     
     -- Create coin with value displayed
     local w, h = love.graphics.getDimensions()
-    self.coin = Coin.new(w / 2, h / 2 - 30, 80, self.base_value)
+    self.coin = Coin.new(w / 2, h / 2 - 30, 80, self.base_value, tier.coin_image, tier.is_silver)
     
     -- Create power meter
     self.power_meter = PowerMeter.new(w / 2 - 200, h - 120, 400, 40)
@@ -106,9 +106,17 @@ end
 function Playing:draw()
     local w, h = love.graphics.getDimensions()
     
-    -- DOS Background - solid black
-    love.graphics.setColor(DOS.BLACK)
-    love.graphics.rectangle("fill", 0, 0, w, h)
+    -- Draw animated background using shader (directly, no canvas)
+    if Shaders and Shaders.background then
+        love.graphics.setShader(Shaders.background)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+        love.graphics.setShader()
+    else
+        -- Fallback to solid black background
+        love.graphics.setColor(DOS.BLACK)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+    end
     
     -- Helper function to draw a DOS-style box
     local function drawBox(x, y, width, height, bg_color, border_color)
@@ -122,14 +130,14 @@ function Playing:draw()
         love.graphics.rectangle("line", x, y, width, height)
     end
     
-    -- Money display box (labels on right side) - GREEN background with BLACK text (static)
+    -- Souls display box (labels on right side) - GREEN background with BLACK text (static)
     drawBox(20, 20, 200, 45, DOS.GREEN, DOS.GREEN)
     love.graphics.setFont(Fonts.xlarge)
     love.graphics.setColor(DOS.BLACK)
-    love.graphics.printf("$" .. string.format("%.2f", self.money), 30, 30, 80, "left")
+    love.graphics.printf(math.floor(self.souls), 30, 30, 160, "left")
     love.graphics.setColor(DOS.BLACK)
     love.graphics.setFont(Fonts.normal)
-    love.graphics.printf("MONEY", 120, 35, 90, "left")
+    love.graphics.printf("SOULS", 120, 35, 90, "left")
     
     -- Tails counter box with warning (labels on right side) - RED background with BLACK text
     local effects = Cards.applyEffects(self.owned_cards, self)
@@ -303,8 +311,8 @@ function Playing:draw()
             0, h - 100, w, "center")
     end
     
-    -- Draw coin
-    self.coin:draw()
+    -- Draw coin with owned cards for gem display
+    self.coin:draw(self.owned_cards)
     
     -- Draw power meter
     self.power_meter:draw()
@@ -330,19 +338,19 @@ function Playing:draw()
         local result_color = DOS.WHITE
         
         if self.last_result == "heads" then
-            result_text = "HEADS! +$" .. string.format("%.2f", self.last_earned)
+            result_text = "HEADS! +" .. math.floor(self.last_earned) .. " SOULS"
             result_border = DOS.BRIGHT_GREEN
             result_color = DOS.BRIGHT_GREEN
         elseif self.last_result == "tails" then
             if self.last_earned > 0 then
-                result_text = "TAILS! +$" .. string.format("%.2f", self.last_earned)
+                result_text = "TAILS! +" .. math.floor(self.last_earned) .. " SOULS"
             else
                 result_text = "TAILS!"
             end
             result_border = DOS.BRIGHT_RED
             result_color = DOS.BRIGHT_RED
         elseif self.last_result == "edge" then
-            result_text = "EDGE LANDING!!! +$" .. string.format("%.2f", self.last_earned)
+            result_text = "EDGE LANDING!!! +" .. math.floor(self.last_earned) .. " SOULS"
             result_border = DOS.YELLOW
             result_color = DOS.YELLOW
         end
@@ -434,17 +442,17 @@ function Playing:processFlipResult(result)
         -- Trigger streak multiplier bump animation (only streak changes on heads)
         self.streak_mult_bump = 1.0
         
-        local earned = self.base_value * zone_multiplier * effects.heads_value_multiplier * effects.universal_multiplier * self.streak_multiplier
-        -- Don't floor - keep cents!
+        local earned = self.base_value * zone_multiplier * effects.heads_value_multiplier * effects.universal_multiplier * self.streak_multiplier * 100
+        -- Multiply by 100 to convert to souls
         
         -- Debug output
-        print("Heads! Base: $" .. self.base_value .. " x Zone: " .. zone_multiplier .. " x HeadsMulti: " .. effects.heads_value_multiplier .. " x UniversalMulti: " .. effects.universal_multiplier .. " x StreakMulti: " .. self.streak_multiplier .. " = $" .. earned)
+        print("Heads! Base: " .. self.base_value .. " x Zone: " .. zone_multiplier .. " x HeadsMulti: " .. effects.heads_value_multiplier .. " x UniversalMulti: " .. effects.universal_multiplier .. " x StreakMulti: " .. self.streak_multiplier .. " x100 = " .. earned .. " souls")
         print("Owned cards: " .. #self.owned_cards)
         for _, card in ipairs(self.owned_cards) do
             print("  - " .. card.id .. " (Level " .. card.level .. ")")
         end
         
-        self.money = self.money + earned
+        self.souls = self.souls + earned
         self.last_earned = earned
         self.consecutive_tails = 0
         
@@ -470,10 +478,10 @@ function Playing:processFlipResult(result)
         -- Trigger multiplier bump animations
         self.streak_mult_bump = 1.0
         
-        -- Tails can earn money with Silver Lining card
-        local earned = effects.tails_value * effects.universal_multiplier
-        -- Don't floor - keep cents!
-        self.money = self.money + earned
+        -- Tails can earn souls with Silver Lining card
+        local earned = effects.tails_value * effects.universal_multiplier * 100
+        -- Multiply by 100 to convert to souls
+        self.souls = self.souls + earned
         self.last_earned = earned
         
         -- Count this tail towards consecutive if not ignored
@@ -504,9 +512,9 @@ function Playing:processFlipResult(result)
         -- Trigger streak multiplier bump animation (only streak changes on edge)
         self.streak_mult_bump = 1.0
         
-        local earned = self.base_value * 20 * zone_multiplier * effects.universal_multiplier * self.streak_multiplier
-        -- Don't floor - keep cents!
-        self.money = self.money + earned
+        local earned = self.base_value * 10 * zone_multiplier * effects.universal_multiplier * self.streak_multiplier * 100
+        -- Multiply by 100 to convert to souls
+        self.souls = self.souls + earned
         self.last_earned = earned
         self.consecutive_tails = 0
         
@@ -523,6 +531,9 @@ function Playing:processFlipResult(result)
 end
 
 function Playing:gameOver()
+    -- Cancel shop opening if it was scheduled
+    self.should_open_shop = false
+    
     -- Play game lose sound
     Sounds.gameLose:stop()
     Sounds.gameLose:play()
@@ -530,7 +541,7 @@ function Playing:gameOver()
     local Gamestate = require("utils.gamestate")
     local GameOver = require("states.gameover")
     
-    GameOver.final_money = self.money
+    GameOver.final_souls = self.souls
     GameOver.final_flips = self.flips
     GameOver.flip_history = self.flip_history
     
@@ -543,7 +554,7 @@ function Playing:openShop()
     
     -- Package game data to pass to shop
     local game_data = {
-        money = self.money,
+        souls = self.souls,
         flips = self.flips,
         consecutive_tails = self.consecutive_tails,
         consecutive_heads = self.consecutive_heads,
