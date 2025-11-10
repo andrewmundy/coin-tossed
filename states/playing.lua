@@ -317,18 +317,18 @@ function Playing:draw()
     -- Draw power meter
     self.power_meter:draw()
     
-    -- Display current speed multiplier
-    local speed_mult = self.power_meter.speed / self.power_meter.base_speed
-    local speed_color = DOS.LIGHT_GRAY
-    if speed_mult > 1.0 then
-        speed_color = DOS.BRIGHT_RED  -- Red for fast
-    else
-        speed_color = DOS.BRIGHT_GREEN  -- Green for slow
-    end
-    love.graphics.setColor(speed_color)
-    love.graphics.setFont(Fonts.medium)
-    love.graphics.printf(string.format("Speed: %.2fx", speed_mult), 
-        self.power_meter.x, self.power_meter.y - 25, self.power_meter.width, "center")
+    -- Display current speed multiplier (disabled)
+    -- local speed_mult = self.power_meter.speed / self.power_meter.base_speed
+    -- local speed_color = DOS.LIGHT_GRAY
+    -- if speed_mult > 1.0 then
+    --     speed_color = DOS.BRIGHT_RED  -- Red for fast
+    -- else
+    --     speed_color = DOS.BRIGHT_GREEN  -- Green for slow
+    -- end
+    -- love.graphics.setColor(speed_color)
+    -- love.graphics.setFont(Fonts.medium)
+    -- love.graphics.printf(string.format("Speed: %.2fx", speed_mult), 
+    --     self.power_meter.x, self.power_meter.y - 25, self.power_meter.width, "center")
     
     -- Display last result in a DOS-style box
     if self.result_timer > 0 and self.last_result then

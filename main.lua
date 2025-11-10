@@ -138,20 +138,49 @@ function love.load()
         Shaders.gemGlow = nil
     end
     
-    -- Create canvases
+    -- Create canvases (may fail in web version)
     local w, h = love.graphics.getDimensions()
-    Shaders.backgroundCanvas = love.graphics.newCanvas(w, h)
-    Shaders.gameCanvas = love.graphics.newCanvas(w, h)  -- Canvas for rendering game before CRT effect
+    success, err = pcall(function()
+        Shaders.backgroundCanvas = love.graphics.newCanvas(w, h)
+        Shaders.gameCanvas = love.graphics.newCanvas(w, h)
+    end)
+    if not success then
+        print("Canvas creation failed (this is okay for web version):", err)
+        Shaders.backgroundCanvas = nil
+        Shaders.gameCanvas = nil
+    end
     
     -- Set initial shader parameters
     if Shaders.background then
-        Shaders.background:send("resolution", {w, h})
-        Shaders.background:send("time", 0)
+        success, err = pcall(function()
+            Shaders.background:send("resolution", {w, h})
+            Shaders.background:send("time", 0)
+            -- Set default values for background shader uniforms (required for WebGL)
+            Shaders.background:send("spin_rotation_speed", 0.2)
+            Shaders.background:send("move_speed", 0.2)
+            Shaders.background:send("offset", {0.0, 0.0})
+            Shaders.background:send("colour_1", {0.02, 0.02, 0.02, 1.0})  -- Almost pure black
+            Shaders.background:send("colour_2", {0.05, 0.08, 0.15, 1.0})  -- Dark blue accent
+            Shaders.background:send("colour_3", {0.05, 0.05, 0.05, 1.0})  -- Very dark gray
+            Shaders.background:send("contrast", 3.5)
+            Shaders.background:send("lighting", 0.05)
+            Shaders.background:send("spin_amount", 0.25)
+            Shaders.background:send("pixel_filter", 200.0)
+            Shaders.background:send("is_rotating", true)
+        end)
+        if not success then
+            print("Background shader parameter setup failed:", err)
+        end
     end
     
     -- Set CRT shader parameters
     if Shaders.crt then
-        Shaders.crt:send("scanline_intensity", CRTScanlineIntensity)
+        success, err = pcall(function()
+            Shaders.crt:send("scanline_intensity", CRTScanlineIntensity)
+        end)
+        if not success then
+            print("CRT shader parameter setup failed:", err)
+        end
     end
     
     -- Seed random number generator
@@ -165,7 +194,12 @@ function love.update(dt)
     -- Update shader time
     ShaderTime = ShaderTime + dt
     if Shaders.background then
-        Shaders.background:send("time", ShaderTime)
+        local success, err = pcall(function()
+            Shaders.background:send("time", ShaderTime)
+        end)
+        if not success then
+            print("Failed to update background shader time:", err)
+        end
     end
     -- Simple CRT shader doesn't need time updates
     
@@ -204,19 +238,43 @@ function love.mousemoved(x, y, dx, dy)
 end
 
 function love.resize(w, h)
-    -- Recreate canvases for new window size
+    -- Recreate canvases for new window size (may fail in web version)
     if Shaders.backgroundCanvas then
-        Shaders.backgroundCanvas = love.graphics.newCanvas(w, h)
+        local success, result = pcall(function()
+            return love.graphics.newCanvas(w, h)
+        end)
+        if success then
+            Shaders.backgroundCanvas = result
+        else
+            print("Failed to recreate background canvas:", result)
+        end
     end
     if Shaders.gameCanvas then
-        Shaders.gameCanvas = love.graphics.newCanvas(w, h)
+        local success, result = pcall(function()
+            return love.graphics.newCanvas(w, h)
+        end)
+        if success then
+            Shaders.gameCanvas = result
+        else
+            print("Failed to recreate game canvas:", result)
+        end
     end
     
     -- Update shader resolutions
     if Shaders.background then
-        Shaders.background:send("resolution", {w, h})
+        local success, err = pcall(function()
+            Shaders.background:send("resolution", {w, h})
+        end)
+        if not success then
+            print("Failed to update background shader resolution:", err)
+        end
     end
     if Shaders.crt then
-        Shaders.crt:send("resolution", {w, h})
+        local success, err = pcall(function()
+            Shaders.crt:send("resolution", {w, h})
+        end)
+        if not success then
+            print("Failed to update CRT shader resolution:", err)
+        end
     end
 end

@@ -4,17 +4,17 @@
 
 extern number time;
 extern vec2 resolution;
-extern number spin_rotation_speed = .2;
-extern number move_speed = 0.2;
-extern vec2 offset = vec2(0.0, 0.0);
-extern vec4 colour_1 = vec4(0.02, 0.02, 0.02, 1.0);  // Almost pure black
-extern vec4 colour_2 = vec4(0.05, 0.08, 0.15, 1.0);  // Dark blue accent
-extern vec4 colour_3 = vec4(0.05, 0.05, 0.05, 1.0);  // Very dark gray
-extern number contrast = 3.5;
-extern number lighting = 0.05;
-extern number spin_amount = 0.25;
-extern number pixel_filter = 200.0;
-extern bool is_rotating = true;
+extern number spin_rotation_speed;
+extern number move_speed;
+extern vec2 offset;
+extern vec4 colour_1;
+extern vec4 colour_2;
+extern vec4 colour_3;
+extern number contrast;
+extern number lighting;
+extern number spin_amount;
+extern number pixel_filter;
+extern bool is_rotating;
 
 #define SPIN_EASE 1.0
 

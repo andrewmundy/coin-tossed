@@ -1,7 +1,7 @@
 // Ultra-simple CRT shader - just scanlines
 // Configurable intensity
 
-extern float scanline_intensity = 0.1;  // How dark the scanlines are (0.0 = none, 0.2 = strong)
+extern float scanline_intensity;  // How dark the scanlines are (0.0 = none, 0.2 = strong)
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
 {
