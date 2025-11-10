@@ -18,6 +18,7 @@ Cards.CATALOG = {
         description = "Heads worth more",
         rarity = Cards.RARITY.COMMON,
         max_level = 3,
+        gem = "topaz",
         effect = function(level, game_state)
             return {
                 type = "heads_value",
@@ -31,6 +32,7 @@ Cards.CATALOG = {
         description = "Consecutive heads increase value",
         rarity = Cards.RARITY.COMMON,
         max_level = 3,
+        gem = "garnet",
         effect = function(level, game_state)
             -- Count consecutive heads
             local consecutive = 0
@@ -53,6 +55,7 @@ Cards.CATALOG = {
         description = "Tails earn money",
         rarity = Cards.RARITY.UNCOMMON,
         max_level = 3,
+        gem = "moonstone",
         effect = function(level, game_state)
             return {
                 type = "tails_value",
@@ -66,6 +69,7 @@ Cards.CATALOG = {
         description = "All flips worth more",
         rarity = Cards.RARITY.RARE,
         max_level = 3,
+        gem = "ruby",
         effect = function(level, game_state)
             return {
                 type = "universal_multiplier",
@@ -81,6 +85,7 @@ Cards.CATALOG = {
         description = "Larger heads zones",
         rarity = Cards.RARITY.COMMON,
         max_level = 3,
+        gem = "jade",
         effect = function(level, game_state)
             return {
                 type = "heads_zone_size",
@@ -94,6 +99,7 @@ Cards.CATALOG = {
         description = "Adds extra small heads zone",
         rarity = Cards.RARITY.UNCOMMON,
         max_level = 3,
+        gem = "aquamarine",
         effect = function(level, game_state)
             return {
                 type = "extra_heads_zones",
@@ -103,10 +109,11 @@ Cards.CATALOG = {
     },
     {
         id = "edge_master",
-        name = "Edge Master",
+        name = "Edge Lord",
         description = "Larger edge zones",
         rarity = Cards.RARITY.UNCOMMON,
         max_level = 3,
+        gem = "lapis",
         effect = function(level, game_state)
             return {
                 type = "edge_zone_size",
@@ -122,6 +129,7 @@ Cards.CATALOG = {
         description = "Need 5 tails to lose!",
         rarity = Cards.RARITY.LEGENDARY,
         max_level = 1,
+        gem = "moonstone",
         effect = function(level, game_state)
             return {
                 type = "tails_limit",
@@ -135,6 +143,7 @@ Cards.CATALOG = {
         description = "First N tails don't count",
         rarity = Cards.RARITY.UNCOMMON,
         max_level = 3,
+        gem = "jade",
         effect = function(level, game_state)
             return {
                 type = "ignore_tails",
@@ -150,6 +159,7 @@ Cards.CATALOG = {
         description = "Slower power meter",
         rarity = Cards.RARITY.COMMON,
         max_level = 3,
+        gem = "aquamarine",
         effect = function(level, game_state)
             return {
                 type = "meter_speed",
@@ -163,6 +173,7 @@ Cards.CATALOG = {
         description = "Larger edge zones",
         rarity = Cards.RARITY.UNCOMMON,
         max_level = 3,
+        gem = "garnet",
         effect = function(level, game_state)
             return {
                 type = "edge_multiplier",
@@ -178,6 +189,7 @@ Cards.CATALOG = {
         description = "Shop cards cost less",
         rarity = Cards.RARITY.COMMON,
         max_level = 3,
+        gem = "topaz",
         effect = function(level, game_state)
             return {
                 type = "shop_discount",
@@ -199,30 +211,30 @@ end
 
 -- Calculate the cost of a card based on rarity and level
 function Cards.getCardCost(card, level)
-    -- Level 1: $5-10, Level 2: $50, Level 3: $100s
+    -- Level 1: 500-1500 souls, Level 2: 5000 souls, Level 3: 10000+ souls
     local base_costs = {
-        [Cards.RARITY.COMMON] = 5,
-        [Cards.RARITY.UNCOMMON] = 7,
-        [Cards.RARITY.RARE] = 10,
-        [Cards.RARITY.LEGENDARY] = 15
+        [Cards.RARITY.COMMON] = 500,
+        [Cards.RARITY.UNCOMMON] = 700,
+        [Cards.RARITY.RARE] = 1000,
+        [Cards.RARITY.LEGENDARY] = 1500
     }
     
-    local base_cost = base_costs[card.rarity] or 5
+    local base_cost = base_costs[card.rarity] or 500
     
-    -- Cost progression: Level 1 = base ($5-15), Level 2 = $50, Level 3 = $100s
+    -- Cost progression: Level 1 = base (500-1500 souls), Level 2 = 5000 souls, Level 3 = 10000+ souls
     if level == 1 then
         return base_cost
     elseif level == 2 then
-        return 50
+        return 5000
     elseif level == 3 then
-        -- Scale hundreds based on rarity
+        -- Scale thousands based on rarity
         local level3_costs = {
-            [Cards.RARITY.COMMON] = 100,
-            [Cards.RARITY.UNCOMMON] = 150,
-            [Cards.RARITY.RARE] = 200,
-            [Cards.RARITY.LEGENDARY] = 300
+            [Cards.RARITY.COMMON] = 10000,
+            [Cards.RARITY.UNCOMMON] = 15000,
+            [Cards.RARITY.RARE] = 20000,
+            [Cards.RARITY.LEGENDARY] = 30000
         }
-        return level3_costs[card.rarity] or 100
+        return level3_costs[card.rarity] or 10000
     end
     
     return base_cost

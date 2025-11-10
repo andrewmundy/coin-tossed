@@ -10,6 +10,21 @@ Fonts = {}
 -- Global sounds table
 Sounds = {}
 
+-- Global images table
+Images = {}
+
+-- Global shaders table
+Shaders = {}
+
+-- Global time for shaders
+ShaderTime = 0
+
+-- Enable/disable CRT effect (set to false to disable)
+UseCRTEffect = true  -- Enabled - using ultra-simple shader
+
+-- CRT scanline intensity (0.0 = none, 0.05 = subtle, 0.1 = medium, 0.2 = strong)
+CRTScanlineIntensity = 0.015  -- Adjust this value to make CRT more or less intense
+
 -- DOS Color Palette (16 colors)
 DOS = {
     BLACK = {0, 0, 0},
@@ -51,9 +66,93 @@ function love.load()
     Sounds.gameLose = love.audio.newSource("assets/sounds/game-lose.WAV", "static")
     Sounds.upgradeCoin = love.audio.newSource("assets/sounds/upgrade-coin.WAV", "static")
     
-    -- Set up graphics
+    -- Set up graphics (must be before loading images)
     love.graphics.setDefaultFilter("nearest", "nearest")
+    
+    -- Load coin images
+    Images.coin1 = love.graphics.newImage("assets/images/coin1.png")
+    Images.coin1:setFilter("nearest", "nearest")
+    Images.coin2 = love.graphics.newImage("assets/images/coin2.png")
+    Images.coin2:setFilter("nearest", "nearest")
+    
+    -- Default coin (for backwards compatibility)
+    Images.coin = Images.coin1
+    
+    -- Load gem images
+    Images.gems = {
+        aquamarine = love.graphics.newImage("assets/images/aquamarine.png"),
+        garnet = love.graphics.newImage("assets/images/garnet.png"),
+        jade = love.graphics.newImage("assets/images/jade.png"),
+        lapis = love.graphics.newImage("assets/images/lapis.png"),
+        moonstone = love.graphics.newImage("assets/images/moonstone.png"),
+        ruby = love.graphics.newImage("assets/images/ruby.png"),
+        topaz = love.graphics.newImage("assets/images/topaz.png")
+    }
+    
+    -- Set filter for all gems
+    for _, gem in pairs(Images.gems) do
+        gem:setFilter("nearest", "nearest")
+    end
+    
+    -- Define glow colors for each gem
+    Images.gemColors = {
+        aquamarine = {0.4, 0.9, 0.9},  -- Cyan/turquoise
+        garnet = {0.8, 0.2, 0.2},      -- Red
+        jade = {0.3, 0.8, 0.3},        -- Green
+        lapis = {0.2, 0.4, 0.9},       -- Deep blue
+        moonstone = {0.9, 0.9, 1.0},   -- White/silver
+        ruby = {0.9, 0.1, 0.2},        -- Bright red
+        topaz = {1.0, 0.8, 0.2}        -- Yellow/gold
+    }
     love.graphics.setLineStyle("smooth")
+    
+    -- Load shaders with error handling
+    local success, err = pcall(function()
+        Shaders.background = love.graphics.newShader("assets/shaders/background.glsl")
+    end)
+    if not success then
+        print("Background shader failed to load:", err)
+    end
+    
+    success, err = pcall(function()
+        Shaders.crt = love.graphics.newShader("assets/shaders/crt-simple.glsl")
+    end)
+    if not success then
+        print("CRT shader failed to load:", err)
+        Shaders.crt = nil
+    end
+    
+    success, err = pcall(function()
+        Shaders.silverCoin = love.graphics.newShader("assets/shaders/silver-coin.glsl")
+    end)
+    if not success then
+        print("Silver coin shader failed to load:", err)
+        Shaders.silverCoin = nil
+    end
+    
+    success, err = pcall(function()
+        Shaders.gemGlow = love.graphics.newShader("assets/shaders/gem-glow.glsl")
+    end)
+    if not success then
+        print("Gem glow shader failed to load:", err)
+        Shaders.gemGlow = nil
+    end
+    
+    -- Create canvases
+    local w, h = love.graphics.getDimensions()
+    Shaders.backgroundCanvas = love.graphics.newCanvas(w, h)
+    Shaders.gameCanvas = love.graphics.newCanvas(w, h)  -- Canvas for rendering game before CRT effect
+    
+    -- Set initial shader parameters
+    if Shaders.background then
+        Shaders.background:send("resolution", {w, h})
+        Shaders.background:send("time", 0)
+    end
+    
+    -- Set CRT shader parameters
+    if Shaders.crt then
+        Shaders.crt:send("scanline_intensity", CRTScanlineIntensity)
+    end
     
     -- Seed random number generator
     love.math.setRandomSeed(os.time())
@@ -63,11 +162,33 @@ function love.load()
 end
 
 function love.update(dt)
+    -- Update shader time
+    ShaderTime = ShaderTime + dt
+    if Shaders.background then
+        Shaders.background:send("time", ShaderTime)
+    end
+    -- Simple CRT shader doesn't need time updates
+    
     Gamestate.update(dt)
 end
 
 function love.draw()
-    Gamestate.draw()
+    -- Render game to canvas and apply CRT effect if enabled
+    if UseCRTEffect and Shaders.gameCanvas and Shaders.crt then
+        love.graphics.setCanvas(Shaders.gameCanvas)
+        love.graphics.clear()
+        Gamestate.draw()
+        love.graphics.setCanvas()
+        
+        -- Apply CRT shader and draw to screen
+        love.graphics.setShader(Shaders.crt)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(Shaders.gameCanvas, 0, 0)
+        love.graphics.setShader()
+    else
+        -- Draw directly without CRT effect
+        Gamestate.draw()
+    end
 end
 
 function love.mousepressed(x, y, button)
@@ -83,5 +204,19 @@ function love.mousemoved(x, y, dx, dy)
 end
 
 function love.resize(w, h)
-    -- Handle window resize if needed
+    -- Recreate canvases for new window size
+    if Shaders.backgroundCanvas then
+        Shaders.backgroundCanvas = love.graphics.newCanvas(w, h)
+    end
+    if Shaders.gameCanvas then
+        Shaders.gameCanvas = love.graphics.newCanvas(w, h)
+    end
+    
+    -- Update shader resolutions
+    if Shaders.background then
+        Shaders.background:send("resolution", {w, h})
+    end
+    if Shaders.crt then
+        Shaders.crt:send("resolution", {w, h})
+    end
 end

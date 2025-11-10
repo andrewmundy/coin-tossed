@@ -4,44 +4,49 @@ local CoinUpgrades = {}
 -- Coin tiers with their properties
 CoinUpgrades.TIERS = {
     {
-        id = "bronze",
-        name = "Bronze Coin",
+        id = "level_1",
+        name = "Level 1 Coin",
         base_value = 1,
-        max_card_slots = 2,
-        color = {0.8, 0.5, 0.3},
+        max_card_slots = 1,
+        coin_image = "coin1",
+        is_silver = true,
         cost = 0 -- Starting tier
     },
     {
-        id = "silver",
-        name = "Silver Coin",
+        id = "level_2",
+        name = "Level 2 Coin",
         base_value = 2,
+        max_card_slots = 2,
+        coin_image = "coin1",
+        is_silver = false,
+        cost = 5000
+    },
+    {
+        id = "level_3",
+        name = "Level 3 Coin",
+        base_value = 3,
         max_card_slots = 3,
-        color = {0.75, 0.75, 0.8},
-        cost = 50
+        coin_image = "coin2",
+        is_silver = true,
+        cost = 20000
     },
     {
-        id = "gold",
-        name = "Gold Coin",
-        base_value = 4,
+        id = "level_4",
+        name = "Level 4 Coin",
+        base_value = 5,
         max_card_slots = 4,
-        color = {1, 0.84, 0},
-        cost = 300
+        coin_image = "coin2",
+        is_silver = false,
+        cost = 60000
     },
     {
-        id = "platinum",
-        name = "Platinum Coin",
+        id = "level_5",
+        name = "Level 5 Coin",
         base_value = 8,
         max_card_slots = 5,
-        color = {0.7, 0.9, 1},
-        cost = 1500
-    },
-    {
-        id = "diamond",
-        name = "Diamond Coin",
-        base_value = 16,
-        max_card_slots = 6,
-        color = {0.5, 1, 1},
-        cost = 5000
+        coin_image = "coin2",
+        is_silver = false,
+        cost = 200000
     }
 }
 
@@ -52,7 +57,7 @@ function CoinUpgrades.getTier(tier_id)
             return tier
         end
     end
-    return CoinUpgrades.TIERS[1] -- Default to bronze
+    return CoinUpgrades.TIERS[1] -- Default to level 1
 end
 
 -- Get next tier
@@ -66,13 +71,13 @@ function CoinUpgrades.getNextTier(current_tier_id)
 end
 
 -- Check if can upgrade
-function CoinUpgrades.canUpgrade(current_tier_id, money)
+function CoinUpgrades.canUpgrade(current_tier_id, souls)
     local next_tier = CoinUpgrades.getNextTier(current_tier_id)
     if not next_tier then
         return false, "Max tier reached"
     end
-    if money < next_tier.cost then
-        return false, "Not enough money"
+    if souls < next_tier.cost then
+        return false, "Not enough souls"
     end
     return true, next_tier
 end
