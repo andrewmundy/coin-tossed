@@ -133,6 +133,17 @@ Create a `.deb` package with:
 
 To run in a browser:
 
+### Method 1: Using the Build Script (Easiest - Includes Custom CSS)
+
+```bash
+chmod +x build_web.sh
+./build_web.sh
+```
+
+This automatically builds the game and applies your custom CSS from `custom-theme/love.css`.
+
+### Method 2: Manual Build
+
 1. **Install love.js:**
 
    ```bash
@@ -142,10 +153,22 @@ To run in a browser:
 2. **Build:**
 
    ```bash
-   love.js Flipper.love flipper-web
+   npx --yes love.js Flipper.love game -t "Flipper - Coin Flipping Roguelike" --compatibility
    ```
 
-3. **Result:** HTML5 version you can host online!
+3. **Optional - Apply Custom CSS:**
+
+   If you want custom styling, copy your CSS over the generated one:
+
+   ```bash
+   cp custom-theme/love.css game/theme/love.css
+   ```
+
+4. **Result:** HTML5 version you can host online!
+
+### Customizing the Web Theme
+
+Edit `custom-theme/love.css` to customize the look of the web version. Your changes will be automatically applied when using `build_web.sh`.
 
 ---
 
