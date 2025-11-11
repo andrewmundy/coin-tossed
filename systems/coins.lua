@@ -1,4 +1,5 @@
 -- Coin upgrade system
+local Config = require("config")
 local CoinUpgrades = {}
 
 -- Coin tiers with their properties
@@ -19,7 +20,7 @@ CoinUpgrades.TIERS = {
         max_card_slots = 2,
         coin_image = "coin1",
         is_silver = false,
-        cost = 5000
+        cost = Config.COIN_UPGRADE_COSTS.level_1_to_2
     },
     {
         id = "level_3",
@@ -28,7 +29,7 @@ CoinUpgrades.TIERS = {
         max_card_slots = 3,
         coin_image = "coin2",
         is_silver = true,
-        cost = 20000
+        cost = Config.COIN_UPGRADE_COSTS.level_2_to_3
     },
     {
         id = "level_4",
@@ -37,7 +38,7 @@ CoinUpgrades.TIERS = {
         max_card_slots = 4,
         coin_image = "coin2",
         is_silver = false,
-        cost = 60000
+        cost = Config.COIN_UPGRADE_COSTS.level_3_to_4
     },
     {
         id = "level_5",
@@ -46,7 +47,7 @@ CoinUpgrades.TIERS = {
         max_card_slots = 5,
         coin_image = "coin2",
         is_silver = false,
-        cost = 200000
+        cost = Config.COIN_UPGRADE_COSTS.level_4_to_5
     }
 }
 
