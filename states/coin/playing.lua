@@ -1,8 +1,8 @@
--- Playing state - main gameplay
-local Coin = require("entities.coin")
-local PowerMeter = require("entities.powermeter")
-local Cards = require("systems.cards")
-local CoinUpgrades = require("systems.coins")
+-- Playing state - main gameplay (Coin Mode)
+local Coin = require("entities.coin.coin")
+local PowerMeter = require("entities.shared.powermeter")
+local Cards = require("systems.shared.cards")
+local CoinUpgrades = require("systems.coin.coins")
 local Responsive = require("utils.responsive")
 
 local Playing = {}
@@ -14,19 +14,31 @@ function Playing:enter(previous_state, game_data)
         previous_state = nil
     end
     
+    -- Store game mode (from intro screen or existing game data)
+    if game_data and game_data.game_mode then
+        self.game_mode = game_data.game_mode
+    elseif not game_data then
+        -- Default to coin mode if starting fresh (shouldn't happen, but safety)
+        self.game_mode = "coin"
+    else
+        -- Preserve existing game mode
+        self.game_mode = game_data.game_mode or "coin"
+    end
+    
     -- If returning from shop, restore game data
-    if game_data then
+    if game_data and game_data.souls ~= nil then
+        -- Existing game data (from shop or previous state)
         self.souls = game_data.souls
         self.flips = game_data.flips
         self.consecutive_tails = 0  -- Reset tails counter when returning from shop
         self.consecutive_heads = game_data.consecutive_heads or 0
         self.streak_multiplier = game_data.streak_multiplier or 1.0
-        self.coin_tier = game_data.coin_tier or "bronze"
-        self.flip_history = game_data.flip_history
-        self.owned_cards = game_data.owned_cards
+        self.coin_tier = game_data.coin_tier or "level_1"
+        self.flip_history = game_data.flip_history or {}
+        self.owned_cards = game_data.owned_cards or {}
         self.flips_since_shop = game_data.flips_since_shop or 0
     else
-        -- New game
+        -- New game (from intro screen or fresh start)
         self.souls = 0
         self.flips = 0
         self.consecutive_tails = 0
@@ -36,6 +48,18 @@ function Playing:enter(previous_state, game_data)
         self.flip_history = {}
         self.owned_cards = {}
         self.flips_since_shop = 0
+    end
+    
+    -- Ensure owned_cards is always initialized (safety check)
+    if not self.owned_cards then
+        self.owned_cards = {}
+    end
+    
+    -- Battle mode placeholder: same as coin mode for now
+    -- This is where battle mode logic would go later
+    if self.game_mode == "battle" then
+        -- Battle mode will be implemented here later
+        -- For now, it's identical to coin mode
     end
     
     -- Initialize streak tracking if not present
@@ -72,6 +96,9 @@ function Playing:enter(previous_state, game_data)
     
     -- Card details toggle
     self.show_card_details = false
+    
+    -- Settings button hover state
+    self.settings_button_hovered = false
 end
 
 function Playing:update(dt)
@@ -298,7 +325,7 @@ function Playing:draw()
                     
                     -- Show effect
                     local effect = card_def.effect(owned.level, self)
-                    local Shop = require("states.shop")
+                    local Shop = require("states.coin.shop")
                     local effect_text = Shop:formatEffect(effect, owned.level)
                     love.graphics.setColor(0.5, 1, 0.5)
                     love.graphics.setFont(Fonts.tiny)
@@ -428,7 +455,50 @@ function Playing:draw()
     love.graphics.setColor(1, 1, 1)
 end
 
+function Playing:drawSettingsButton()
+    -- Draw settings button separately so it can be rendered after canvas
+    local w, h = love.graphics.getDimensions()
+    local settings_button_size = 30
+    local settings_button_x = w - settings_button_size - 10
+    local settings_button_y = 10
+    
+    -- Draw X text in white (no background, no border)
+    local text_color = self.settings_button_hovered and 1.0 or 0.7  -- Brighter when hovered
+    love.graphics.setColor(text_color, text_color, text_color, 1)
+    love.graphics.setFont(Fonts.large)
+    love.graphics.printf("X", settings_button_x, settings_button_y + 5, settings_button_size, "center")
+    
+    love.graphics.setColor(1, 1, 1)
+end
+
+function Playing:mousemoved(x, y)
+    -- Check if hovering over settings button
+    local w, h = love.graphics.getDimensions()
+    local settings_button_size = 30
+    local settings_button_x = w - settings_button_size - 10
+    local settings_button_y = 10
+    
+    if x >= settings_button_x and x <= settings_button_x + settings_button_size and
+       y >= settings_button_y and y <= settings_button_y + settings_button_size then
+        self.settings_button_hovered = true
+    else
+        self.settings_button_hovered = false
+    end
+end
+
 function Playing:mousepressed(x, y, button)
+    -- Check if clicking settings button
+    local w, h = love.graphics.getDimensions()
+    local settings_button_size = 30
+    local settings_button_x = w - settings_button_size - 10
+    local settings_button_y = 10
+    
+    if button == 1 and x >= settings_button_x and x <= settings_button_x + settings_button_size and
+       y >= settings_button_y and y <= settings_button_y + settings_button_size then
+        self:openSettings()
+        return
+    end
+    
     if button == 1 and self.coin:isHovered(x, y) then
         -- Get the zone first, then pass it to flip
         local zone = self.power_meter:hit()
@@ -440,7 +510,8 @@ end
 
 function Playing:keypressed(key)
     if key == "escape" then
-        love.event.quit()
+        -- Open settings/pause menu
+        self:openSettings()
     elseif key == "space" and not self.coin.is_flipping then
         -- Get the zone first, then pass it to flip
         local zone = self.power_meter:hit()
@@ -595,7 +666,7 @@ function Playing:gameOver()
     Sounds.gameLose:play()
     
     local Gamestate = require("utils.gamestate")
-    local GameOver = require("states.gameover")
+    local GameOver = require("states.shared.gameover")
     
     GameOver.final_souls = self.souls
     GameOver.final_flips = self.flips
@@ -606,10 +677,11 @@ end
 
 function Playing:openShop()
     local Gamestate = require("utils.gamestate")
-    local Shop = require("states.shop")
+    local Shop = require("states.coin.shop")
     
     -- Package game data to pass to shop
     local game_data = {
+        game_mode = self.game_mode or "coin",  -- Preserve game mode
         souls = self.souls,
         flips = self.flips,
         consecutive_tails = self.consecutive_tails,
@@ -622,6 +694,27 @@ function Playing:openShop()
     }
     
     Gamestate.switch(Shop, self, game_data)
+end
+
+function Playing:openSettings()
+    local Gamestate = require("utils.gamestate")
+    local Settings = require("states.shared.settings")
+    
+    -- Package game data to pass to settings (so we can resume)
+    local game_data = {
+        game_mode = self.game_mode or "coin",  -- Preserve game mode
+        souls = self.souls,
+        flips = self.flips,
+        consecutive_tails = self.consecutive_tails,
+        consecutive_heads = self.consecutive_heads,
+        streak_multiplier = self.streak_multiplier,
+        coin_tier = self.coin_tier,
+        flip_history = self.flip_history,
+        owned_cards = self.owned_cards,
+        flips_since_shop = self.flips_since_shop
+    }
+    
+    Gamestate.switch(Settings, self, game_data)
 end
 
 function Playing:applyCardEffects()

@@ -110,7 +110,7 @@ function Coin:draw(owned_cards)
             
             -- Draw gems slotted around the coin based on owned cards (hide during flip animation)
             if owned_cards and Images.gems and not self.is_flipping then
-                local Cards = require("systems.cards")
+                local Cards = require("systems.shared.cards")
                 local owned_gems = {}
                 -- Collect unique gems from owned cards
                 for _, owned in ipairs(owned_cards) do

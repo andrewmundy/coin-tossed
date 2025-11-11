@@ -130,8 +130,9 @@ end
 
 function GameOver:restart()
     local Gamestate = require("utils.gamestate")
-    local Playing = require("states.playing")
-    Gamestate.switch(Playing)
+    local Intro = require("states.shared.intro")
+    -- Return to intro screen to select game mode again
+    Gamestate.switch(Intro)
 end
 
 return GameOver

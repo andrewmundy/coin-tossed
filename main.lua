@@ -2,7 +2,7 @@
 -- Main game file
 
 local Gamestate = require("utils.gamestate")
-local Playing = require("states.playing")
+local Intro = require("states.shared.intro")
 
 -- Global fonts table
 Fonts = {}
@@ -23,29 +23,29 @@ ShaderTime = 0
 IsWebBuild = love.system and love.system.getOS() == "Web"
 
 -- Enable/disable CRT effect (set to false to disable)
-UseCRTEffect = true  -- Enabled, will gracefully fall back if shaders fail
+UseCRTEffect = true -- Enabled, will gracefully fall back if shaders fail
 
 -- CRT scanline intensity (0.0 = none, 0.05 = subtle, 0.1 = medium, 0.2 = strong)
-CRTScanlineIntensity = 0.015  -- Adjust this value to make CRT more or less intense
+CRTScanlineIntensity = 0.015 -- Adjust this value to make CRT more or less intense
 
 -- DOS Color Palette (16 colors)
 DOS = {
-    BLACK = {0, 0, 0},
-    BLUE = {0, 0, 0.667},
-    GREEN = {0, 0.667, 0},
-    CYAN = {0, 0.667, 0.667},
-    RED = {0.667, 0, 0},
-    MAGENTA = {0.667, 0, 0.667},
-    BROWN = {0.667, 0.333, 0},
-    LIGHT_GRAY = {0.667, 0.667, 0.667},
-    DARK_GRAY = {0.333, 0.333, 0.333},
-    BRIGHT_BLUE = {0.333, 0.333, 1},
-    BRIGHT_GREEN = {0.333, 1, 0.333},
-    BRIGHT_CYAN = {0.333, 1, 1},
-    BRIGHT_RED = {1, 0.333, 0.333},
-    BRIGHT_MAGENTA = {1, 0.333, 1},
-    YELLOW = {1, 1, 0.333},
-    WHITE = {1, 1, 1}
+    BLACK = { 0, 0, 0 },
+    BLUE = { 0, 0, 0.667 },
+    GREEN = { 0, 0.667, 0 },
+    CYAN = { 0, 0.667, 0.667 },
+    RED = { 0.667, 0, 0 },
+    MAGENTA = { 0.667, 0, 0.667 },
+    BROWN = { 0.667, 0.333, 0 },
+    LIGHT_GRAY = { 0.667, 0.667, 0.667 },
+    DARK_GRAY = { 0.333, 0.333, 0.333 },
+    BRIGHT_BLUE = { 0.333, 0.333, 1 },
+    BRIGHT_GREEN = { 0.333, 1, 0.333 },
+    BRIGHT_CYAN = { 0.333, 1, 1 },
+    BRIGHT_RED = { 1, 0.333, 0.333 },
+    BRIGHT_MAGENTA = { 1, 0.333, 1 },
+    YELLOW = { 1, 1, 0.333 },
+    WHITE = { 1, 1, 1 }
 }
 
 function love.load()
@@ -61,26 +61,26 @@ function love.load()
     Fonts.xxlarge = love.graphics.newFont(font_path, 24)
     Fonts.huge = love.graphics.newFont(font_path, 28)
     Fonts.title = love.graphics.newFont(font_path, 40)
-    
+
     -- Load sounds
     Sounds.coinFlip = love.audio.newSource("assets/sounds/coin-flip.WAV", "static")
     Sounds.heads = love.audio.newSource("assets/sounds/heads.WAV", "static")
     Sounds.tails = love.audio.newSource("assets/sounds/tails.WAV", "static")
     Sounds.gameLose = love.audio.newSource("assets/sounds/game-lose.WAV", "static")
     Sounds.upgradeCoin = love.audio.newSource("assets/sounds/upgrade-coin.WAV", "static")
-    
+
     -- Set up graphics (must be before loading images)
     love.graphics.setDefaultFilter("nearest", "nearest")
-    
+
     -- Load coin images
     Images.coin1 = love.graphics.newImage("assets/images/coin1.png")
     Images.coin1:setFilter("nearest", "nearest")
     Images.coin2 = love.graphics.newImage("assets/images/coin2.png")
     Images.coin2:setFilter("nearest", "nearest")
-    
+
     -- Default coin (for backwards compatibility)
     Images.coin = Images.coin1
-    
+
     -- Load gem images
     Images.gems = {
         aquamarine = love.graphics.newImage("assets/images/aquamarine.png"),
@@ -91,24 +91,24 @@ function love.load()
         ruby = love.graphics.newImage("assets/images/ruby.png"),
         topaz = love.graphics.newImage("assets/images/topaz.png")
     }
-    
+
     -- Set filter for all gems
     for _, gem in pairs(Images.gems) do
         gem:setFilter("nearest", "nearest")
     end
-    
+
     -- Define glow colors for each gem
     Images.gemColors = {
-        aquamarine = {0.4, 0.9, 0.9},  -- Cyan/turquoise
-        garnet = {0.8, 0.2, 0.2},      -- Red
-        jade = {0.3, 0.8, 0.3},        -- Green
-        lapis = {0.2, 0.4, 0.9},       -- Deep blue
-        moonstone = {0.9, 0.9, 1.0},   -- White/silver
-        ruby = {0.9, 0.1, 0.2},        -- Bright red
-        topaz = {1.0, 0.8, 0.2}        -- Yellow/gold
+        aquamarine = { 0.4, 0.9, 0.9 }, -- Cyan/turquoise
+        garnet = { 0.8, 0.2, 0.2 },     -- Red
+        jade = { 0.3, 0.8, 0.3 },       -- Green
+        lapis = { 0.2, 0.4, 0.9 },      -- Deep blue
+        moonstone = { 0.9, 0.9, 1.0 },  -- White/silver
+        ruby = { 0.9, 0.1, 0.2 },       -- Bright red
+        topaz = { 1.0, 0.8, 0.2 }       -- Yellow/gold
     }
     love.graphics.setLineStyle("smooth")
-    
+
     -- Load shaders with error handling
     local success, err = pcall(function()
         Shaders.background = love.graphics.newShader("assets/shaders/background.glsl")
@@ -117,7 +117,7 @@ function love.load()
         print("Background shader failed to load:", err)
         Shaders.background = nil
     end
-    
+
     success, err = pcall(function()
         Shaders.crt = love.graphics.newShader("assets/shaders/crt-simple.glsl")
     end)
@@ -125,7 +125,7 @@ function love.load()
         print("CRT shader failed to load:", err)
         Shaders.crt = nil
     end
-    
+
     success, err = pcall(function()
         Shaders.silverCoin = love.graphics.newShader("assets/shaders/silver-coin.glsl")
     end)
@@ -133,7 +133,7 @@ function love.load()
         print("Silver coin shader failed to load:", err)
         Shaders.silverCoin = nil
     end
-    
+
     success, err = pcall(function()
         Shaders.gemGlow = love.graphics.newShader("assets/shaders/gem-glow.glsl")
     end)
@@ -141,7 +141,7 @@ function love.load()
         print("Gem glow shader failed to load:", err)
         Shaders.gemGlow = nil
     end
-    
+
     -- Create canvases (may fail in web version)
     -- Use pixel dimensions for high DPI displays (but not on web)
     local w, h
@@ -163,21 +163,21 @@ function love.load()
         print("Canvas creation failed (shaders will be disabled):", err)
         Shaders.backgroundCanvas = nil
         Shaders.gameCanvas = nil
-        UseCRTEffect = false  -- Disable CRT if canvases fail
+        UseCRTEffect = false -- Disable CRT if canvases fail
     end
-    
+
     -- Set initial shader parameters
     if Shaders.background then
         success, err = pcall(function()
-            Shaders.background:send("resolution", {w, h})
+            Shaders.background:send("resolution", { w, h })
             Shaders.background:send("time", 0)
             -- Set default values for background shader uniforms (required for WebGL)
             Shaders.background:send("spin_rotation_speed", 0.2)
             Shaders.background:send("move_speed", 0.2)
-            Shaders.background:send("offset", {0.0, 0.0})
-            Shaders.background:send("colour_1", {0.02, 0.02, 0.02, 1.0})  -- Almost pure black
-            Shaders.background:send("colour_2", {0.05, 0.08, 0.15, 1.0})  -- Dark blue accent
-            Shaders.background:send("colour_3", {0.05, 0.05, 0.05, 1.0})  -- Very dark gray
+            Shaders.background:send("offset", { 0.0, 0.0 })
+            Shaders.background:send("colour_1", { 0.02, 0.02, 0.02, 1.0 }) -- Almost pure black
+            Shaders.background:send("colour_2", { 0.05, 0.08, 0.15, 1.0 }) -- Dark blue accent
+            Shaders.background:send("colour_3", { 0.05, 0.05, 0.05, 1.0 }) -- Very dark gray
             Shaders.background:send("contrast", 3.5)
             Shaders.background:send("lighting", 0.05)
             Shaders.background:send("spin_amount", 0.25)
@@ -188,7 +188,7 @@ function love.load()
             print("Background shader parameter setup failed:", err)
         end
     end
-    
+
     -- Set CRT shader parameters
     if Shaders.crt then
         success, err = pcall(function()
@@ -198,12 +198,12 @@ function love.load()
             print("CRT shader parameter setup failed:", err)
         end
     end
-    
+
     -- Seed random number generator
     love.math.setRandomSeed(os.time())
-    
-    -- Start with playing state
-    Gamestate.switch(Playing)
+
+    -- Start with intro/menu screen
+    Gamestate.switch(Intro)
 end
 
 function love.update(dt)
@@ -218,7 +218,7 @@ function love.update(dt)
         end
     end
     -- Simple CRT shader doesn't need time updates
-    
+
     Gamestate.update(dt)
 end
 
@@ -235,7 +235,7 @@ function love.draw()
     else
         w, h = love.graphics.getDimensions()
     end
-    
+
     -- Render game to canvas and apply CRT effect if enabled
     if UseCRTEffect and Shaders.gameCanvas and Shaders.crt then
         -- Ensure canvas matches window size
@@ -247,30 +247,40 @@ function love.draw()
             end)
             if success then
                 Shaders.gameCanvas = result
-                
+
                 -- Update background shader resolution after canvas recreation
                 if Shaders.background then
                     pcall(function()
-                        Shaders.background:send("resolution", {w, h})
+                        Shaders.background:send("resolution", { w, h })
                     end)
                 end
             end
         end
-        
+
         -- Set canvas and render game
         love.graphics.setCanvas(Shaders.gameCanvas)
         love.graphics.clear()
         Gamestate.draw()
         love.graphics.setCanvas()
-        
+
         -- Apply CRT shader and draw to screen at 1:1 scale
         love.graphics.setShader(Shaders.crt)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.draw(Shaders.gameCanvas, 0, 0)
         love.graphics.setShader()
+
+        -- Draw settings button on top (outside canvas) if in playing state
+        if Gamestate.current and Gamestate.current.drawSettingsButton then
+            Gamestate.current:drawSettingsButton()
+        end
     else
         -- Draw directly without CRT effect
         Gamestate.draw()
+
+        -- Draw settings button on top if in playing state
+        if Gamestate.current and Gamestate.current.drawSettingsButton then
+            Gamestate.current:drawSettingsButton()
+        end
     end
 end
 
@@ -313,7 +323,7 @@ function love.resize(w, h)
             w, h = love.graphics.getPixelDimensions()
         end
     end
-    
+
     -- Recreate canvases for new window size (may fail in web version)
     if Shaders.backgroundCanvas then
         local success, result = pcall(function()
@@ -335,11 +345,11 @@ function love.resize(w, h)
             print("Failed to recreate game canvas:", result)
         end
     end
-    
+
     -- Update shader resolutions
     if Shaders.background then
         local success, err = pcall(function()
-            Shaders.background:send("resolution", {w, h})
+            Shaders.background:send("resolution", { w, h })
         end)
         if not success then
             print("Failed to update background shader resolution:", err)
@@ -347,7 +357,7 @@ function love.resize(w, h)
     end
     if Shaders.crt then
         local success, err = pcall(function()
-            Shaders.crt:send("resolution", {w, h})
+            Shaders.crt:send("resolution", { w, h })
         end)
         if not success then
             print("Failed to update CRT shader resolution:", err)

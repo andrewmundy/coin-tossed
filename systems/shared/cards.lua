@@ -3,10 +3,10 @@ local Cards = {}
 
 -- Rarity definitions
 Cards.RARITY = {
-    COMMON = {name = "Common", color = {0.7, 0.7, 0.7}, weight = 60},
-    UNCOMMON = {name = "Uncommon", color = {0.3, 0.8, 0.3}, weight = 30},
-    RARE = {name = "Rare", color = {0.4, 0.6, 1.0}, weight = 8},
-    LEGENDARY = {name = "Legendary", color = {1.0, 0.84, 0.0}, weight = 2}
+    COMMON = { name = "Common", color = { 0.7, 0.7, 0.7 }, weight = 60 },
+    UNCOMMON = { name = "Uncommon", color = { 0.3, 0.8, 0.3 }, weight = 30 },
+    RARE = { name = "Rare", color = { 0.4, 0.6, 1.0 }, weight = 8 },
+    LEGENDARY = { name = "Legendary", color = { 1.0, 0.84, 0.0 }, weight = 2 }
 }
 
 -- Card catalog
@@ -77,7 +77,7 @@ Cards.CATALOG = {
             }
         end
     },
-    
+
     -- Probability Engineering Cards
     {
         id = "weighted_coin",
@@ -121,7 +121,7 @@ Cards.CATALOG = {
             }
         end
     },
-    
+
     -- Safety Net Cards
     {
         id = "nine_lives",
@@ -151,7 +151,7 @@ Cards.CATALOG = {
             }
         end
     },
-    
+
     -- Power Meter Cards
     {
         id = "steady_hands",
@@ -181,7 +181,7 @@ Cards.CATALOG = {
             }
         end
     },
-    
+
     -- Economic Cards
     {
         id = "haggler",
@@ -218,9 +218,9 @@ function Cards.getCardCost(card, level)
         [Cards.RARITY.RARE] = 1000,
         [Cards.RARITY.LEGENDARY] = 1500
     }
-    
+
     local base_cost = base_costs[card.rarity] or 500
-    
+
     -- Cost progression: Level 1 = base (500-1500 souls), Level 2 = 5000 souls, Level 3 = 10000+ souls
     if level == 1 then
         return base_cost
@@ -236,7 +236,7 @@ function Cards.getCardCost(card, level)
         }
         return level3_costs[card.rarity] or 10000
     end
-    
+
     return base_cost
 end
 
@@ -245,7 +245,7 @@ function Cards.generateShopCards(num_cards, exclude_ids)
     exclude_ids = exclude_ids or {}
     local shop_cards = {}
     local available_cards = {}
-    
+
     -- Build available cards pool (excluding already owned at max level)
     for _, card in ipairs(Cards.CATALOG) do
         local should_exclude = false
@@ -259,21 +259,21 @@ function Cards.generateShopCards(num_cards, exclude_ids)
             table.insert(available_cards, card)
         end
     end
-    
+
     -- Generate cards based on rarity weights
     for i = 1, num_cards do
         if #available_cards == 0 then break end
-        
+
         -- Calculate total weight
         local total_weight = 0
         for _, card in ipairs(available_cards) do
             total_weight = total_weight + card.rarity.weight
         end
-        
+
         -- Random selection
         local roll = love.math.random() * total_weight
         local cumulative = 0
-        
+
         for idx, card in ipairs(available_cards) do
             cumulative = cumulative + card.rarity.weight
             if roll <= cumulative then
@@ -286,7 +286,7 @@ function Cards.generateShopCards(num_cards, exclude_ids)
             end
         end
     end
-    
+
     return shop_cards
 end
 
@@ -305,13 +305,13 @@ function Cards.applyEffects(owned_cards, game_state)
         extra_heads_zones = 0,
         shop_discount = 0
     }
-    
+
     -- Apply each owned card's effect
     for _, owned_card in ipairs(owned_cards) do
         local card_def = Cards.getCard(owned_card.id)
         if card_def then
             local effect = card_def.effect(owned_card.level, game_state)
-            
+
             if effect.type == "heads_value" then
                 effects.heads_value_multiplier = effects.heads_value_multiplier * effect.multiplier
             elseif effect.type == "tails_value" then
@@ -337,9 +337,8 @@ function Cards.applyEffects(owned_cards, game_state)
             end
         end
     end
-    
+
     return effects
 end
 
 return Cards
-

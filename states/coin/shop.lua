@@ -1,8 +1,8 @@
--- Shop state for selecting upgrade cards
+-- Shop state for selecting upgrade cards (Coin Mode)
 local Shop = {}
 
-local Cards = require("systems.cards")
-local CoinUpgrades = require("systems.coins")
+local Cards = require("systems.shared.cards")
+local CoinUpgrades = require("systems.coin.coins")
 
 function Shop:enter(previous_state, game_data)
     self.game_data = game_data
@@ -360,7 +360,7 @@ function Shop:draw()
         local coin_radius = 80  -- Match the gameplay coin size
         
         -- Create a temporary coin entity for display
-        local Coin = require("entities.coin")
+        local Coin = require("entities.coin.coin")
         local display_coin = Coin.new(coin_center_x, coin_center_y, coin_radius, next_tier.base_value, 
                                       next_tier.coin_image, next_tier.is_silver)
         
